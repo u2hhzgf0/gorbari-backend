@@ -1,6 +1,7 @@
 const httpStatus = require("http-status");
 const { Favorite } = require("../models");
 const ApiError = require("../utils/ApiError");
+const propertyService = require("./property.service");
 
 const createFavorite = async (favoriteBody) => {
   if (favoriteBody.property) {
@@ -17,20 +18,56 @@ const createFavorite = async (favoriteBody) => {
     }
   }
 
+  const property = await propertyService.getPropertyById(favoriteBody.property);
+  if (!property || property.isDeleted) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Property not found");
+  }
+
+  property.favorites += 1;
+  await property.save();
+
   return Favorite.create(favoriteBody);
 };
 
 const queryFavorites = async (filter, options, userId) => {
-  const query = {  user: userId, isDeleted: false };
+  const { sortBy, limit, page } = options;
 
-  for (const key of Object.keys(filter)) {
-    if (filter[key] !== "") {
-      query[key] = filter[key];
-    }
+  let sort = {};
+  if (sortBy) {
+    const parts = sortBy.split(":");
+    sort[parts[0]] = parts[1] === "desc" ? -1 : 1;
+  } else {
+    sort = { createdAt: -1 }; // default sort
   }
 
-  const favorites = await Favorite.paginate(query, options);
-  return favorites;
+  const pageNum = page && parseInt(page, 10) > 0 ? parseInt(page, 10) : 1;
+  const limitNum = limit && parseInt(limit, 10) > 0 ? parseInt(limit, 10) : 10;
+  const skip = (pageNum - 1) * limitNum;
+
+  const favorites = await Favorite.find({
+    ...filter,
+    user: userId,
+    isDeleted: false,
+  })
+    .sort(sort)
+    .skip(skip)
+    .limit(limitNum)
+    .populate("user", "fullName email profileImage")
+    .populate("property", "title type price location images status");
+
+  const totalResults = await Favorite.countDocuments({
+    ...filter,
+    user: userId,
+    isDeleted: false,
+  });
+
+  return {
+    results: favorites,
+    page: pageNum,
+    limit: limitNum,
+    totalPages: Math.ceil(totalResults / limitNum),
+    totalResults,
+  };
 };
 
 const getFavoriteById = async (id) => {
@@ -64,6 +101,13 @@ const deleteFavoriteByProperty = async (propertyId) => {
 
   favorite.isDeleted = true;
   await favorite.save();
+
+  const property = await propertyService.getPropertyById(propertyId);
+  if (property && property.favorites > 0) {
+    property.favorites -= 1;
+    await property.save();
+  }
+
   return favorite;
 };
 

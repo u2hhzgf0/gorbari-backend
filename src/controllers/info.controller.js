@@ -22,8 +22,6 @@ const getFavorites = catchAsync(async (req, res) => {
   const filter = pick(req.query, ["user", "property"]);
   const options = pick(req.query, ["sortBy", "limit", "page"]);
 
-  
-
   const result = await infoService.queryFavorites(filter, options, req.user.id);
 
   res.status(httpStatus.OK).json(

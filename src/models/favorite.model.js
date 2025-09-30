@@ -10,7 +10,7 @@ const favoriteSchema = mongoose.Schema(
     },
     property: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Property",
       required: true,
     },
     isDeleted: {
