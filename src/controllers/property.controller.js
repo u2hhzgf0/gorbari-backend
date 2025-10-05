@@ -75,15 +75,18 @@ const getProperties = catchAsync(async (req, res) => {
     delete filter.minAreaSqFt;
     delete filter.maxAreaSqFt;
   }
-  Object.keys(filter).forEach(key => {
-    if (typeof filter[key] === 'string' && filter[key].includes(',')) {
-      filter[key] = filter[key].split(',').map(v => v.trim()).filter(v => v);
+  Object.keys(filter).forEach((key) => {
+    if (typeof filter[key] === "string" && filter[key].includes(",")) {
+      filter[key] = filter[key]
+        .split(",")
+        .map((v) => v.trim())
+        .filter((v) => v);
     }
   });
 
   const options = pick(req.query, ["sortBy", "limit", "page"]);
   const result = await propertyService.queryProperties(filter, options);
-  
+
   res.status(httpStatus.OK).json(
     response({
       message: "All Properties",
@@ -94,11 +97,69 @@ const getProperties = catchAsync(async (req, res) => {
   );
 });
 
+const getPropertiesForAgent = catchAsync(async (req, res) => {
+  const filter = pick(req.query, [
+    "title",
+    "type",
+    "address",
+    "city",
+    "state",
+    "country",
+    "bedrooms",
+    "bathrooms",
+    "zipCode",
+    "lotSize",
+    "maxPrice",
+    "minPrice",
+    "minAreaSqFt",
+    "maxAreaSqFt",
+  ]);
+
+  if (filter.minPrice || filter.maxPrice) {
+    filter.price = {};
+    if (filter.minPrice) filter.price.min = Number(filter.minPrice);
+    if (filter.maxPrice) filter.price.max = Number(filter.maxPrice);
+    delete filter.minPrice;
+    delete filter.maxPrice;
+  }
+
+  if (filter.minAreaSqFt || filter.maxAreaSqFt) {
+    filter.areaSqFt = {};
+    if (filter.minAreaSqFt) filter.areaSqFt.min = Number(filter.minAreaSqFt);
+    if (filter.maxAreaSqFt) filter.areaSqFt.max = Number(filter.maxAreaSqFt);
+    delete filter.minAreaSqFt;
+    delete filter.maxAreaSqFt;
+  }
+  Object.keys(filter).forEach((key) => {
+    if (typeof filter[key] === "string" && filter[key].includes(",")) {
+      filter[key] = filter[key]
+        .split(",")
+        .map((v) => v.trim())
+        .filter((v) => v);
+    }
+  });
+
+  const options = pick(req.query, ["sortBy", "limit", "page"]);
+  const result = await propertyService.queryPropertiesForAgent(
+    filter,
+    options,
+    req.user.id
+  );
+
+  res.status(httpStatus.OK).json(
+    response({
+      message: "All Properties",
+      status: "OK",
+      statusCode: httpStatus.OK,
+      data: result,
+    })
+  );
+});
 
 const getPropertiesAdvanced = catchAsync(async (req, res) => {
   const filter = pick(req.query, [
     "title",
-    "type", 
+    "type",
     "address",
     "city",
     "state",
@@ -115,17 +176,17 @@ const getPropertiesAdvanced = catchAsync(async (req, res) => {
 
     // Range filters --->
     "maxPrice",
-    "minPrice", 
+    "minPrice",
     "minAreaSqFt",
     "maxAreaSqFt",
     "minLotSize",
     "maxLotSize",
     "minBedrooms",
     "maxBedrooms",
-    "minBathrooms", 
+    "minBathrooms",
     "maxBathrooms",
     "minYearBuilt",
-    "maxYearBuilt"
+    "maxYearBuilt",
   ]);
 
   const createRangeFilter = (minKey, maxKey, targetKey) => {
@@ -138,26 +199,29 @@ const getPropertiesAdvanced = catchAsync(async (req, res) => {
     }
   };
 
-  createRangeFilter('minPrice', 'maxPrice', 'price');
-  createRangeFilter('minAreaSqFt', 'maxAreaSqFt', 'areaSqFt');
-  createRangeFilter('minLotSize', 'maxLotSize', 'lotSize');
-  createRangeFilter('minBedrooms', 'maxBedrooms', 'bedrooms');
-  createRangeFilter('minBathrooms', 'maxBathrooms', 'bathrooms');
-  createRangeFilter('minYearBuilt', 'maxYearBuilt', 'yearBuilt');
+  createRangeFilter("minPrice", "maxPrice", "price");
+  createRangeFilter("minAreaSqFt", "maxAreaSqFt", "areaSqFt");
+  createRangeFilter("minLotSize", "maxLotSize", "lotSize");
+  createRangeFilter("minBedrooms", "maxBedrooms", "bedrooms");
+  createRangeFilter("minBathrooms", "maxBathrooms", "bathrooms");
+  createRangeFilter("minYearBuilt", "maxYearBuilt", "yearBuilt");
 
-  Object.keys(filter).forEach(key => {
-    if (typeof filter[key] === 'string' && filter[key].includes(',')) {
-      filter[key] = filter[key].split(',').map(v => v.trim()).filter(v => v);
+  Object.keys(filter).forEach((key) => {
+    if (typeof filter[key] === "string" && filter[key].includes(",")) {
+      filter[key] = filter[key]
+        .split(",")
+        .map((v) => v.trim())
+        .filter((v) => v);
     }
   });
 
   const options = pick(req.query, ["sortBy", "limit", "page"]);
   const result = await propertyService.queryProperties(filter, options);
-  
+
   res.status(httpStatus.OK).json(
     response({
       message: "All Properties",
-      status: "OK", 
+      status: "OK",
       statusCode: httpStatus.OK,
       data: result,
     })
@@ -273,4 +337,5 @@ module.exports = {
   uploadPropertyImage,
   deletePropertyImage,
   deleteProperty,
+  getPropertiesForAgent,
 };

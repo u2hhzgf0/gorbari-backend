@@ -20,6 +20,9 @@ router
 
 router.route("/all").get(propertyController.getProperties);
 
+router.route("/selp/all").get(auth("common"), propertyController.getPropertiesForAgent);
+
+
 router
   .route("/:propertyId/upload-image")
   .post(
