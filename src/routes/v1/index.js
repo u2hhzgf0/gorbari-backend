@@ -5,6 +5,7 @@ const userRoute = require("./user.routes");
 const docsRoute = require("./docs.routes");
 const propertyRoute = require("./property.routes");
 const infoRoute = require("./info.routes");
+const contactRoute = require("./contact.routes");
 
 const router = express.Router();
 
@@ -22,6 +23,10 @@ const defaultRoutes = [
     route: propertyRoute,
   },
 
+  {
+    path: "/contact",
+    route: contactRoute,
+  },
   {
     path: "/info",
     route: infoRoute,

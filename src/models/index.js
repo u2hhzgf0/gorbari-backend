@@ -2,6 +2,7 @@ module.exports.Token = require('./token.model');
 module.exports.User = require('./user.model');
 module.exports.Property = require('./property.model');
 module.exports.Favorite = require('./favorite.model');
+module.exports.Contact = require("./contact.model");
 
 module.exports.Notification = require('./notification.model');
 module.exports.TermsAndCondition = require('./termsConditions.model');
