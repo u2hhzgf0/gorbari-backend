@@ -12,7 +12,7 @@ const createContacts = async (data) => {
     const propertyWoner = await userService.getUserById(data.propertyWoner);
     sendContactsUsEmail({
       ...data,
-      propertyOwnerEmail: propertyOwner.email,
+      propertyOwnerEmail: propertyWoner.email,
     });
   } else {
     sendContactsUsEmail(data);

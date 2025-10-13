@@ -6,6 +6,7 @@ const docsRoute = require("./docs.routes");
 const propertyRoute = require("./property.routes");
 const infoRoute = require("./info.routes");
 const contactRoute = require("./contact.routes");
+const subscriptionRoute = require("./subscription.route");
 
 const router = express.Router();
 
@@ -21,6 +22,10 @@ const defaultRoutes = [
   {
     path: "/property",
     route: propertyRoute,
+  },
+  {
+    path: "/subscriptions",
+    route: subscriptionRoute,
   },
 
   {

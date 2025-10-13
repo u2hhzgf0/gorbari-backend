@@ -4,6 +4,7 @@ const auth = require("../../middlewares/auth");
 const { contactController } = require("../../controllers");
 
 router.route("/").post(contactController.createContact);
+router.route("/for-property").post(auth("common"), contactController.createContact);
 router.route("/").get(auth("admin"), contactController.getContacts);
 router
   .route("/:contactId")

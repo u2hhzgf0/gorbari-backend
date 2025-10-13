@@ -3,5 +3,4 @@ module.exports.userController = require('./user.controller');
 module.exports.propertyController = require('./property.controller');
 module.exports.infoController = require('./info.controller');
 module.exports.contactController = require("./contact.controller");
-
-
+module.exports.subscriptionController = require("./subscription.controller")

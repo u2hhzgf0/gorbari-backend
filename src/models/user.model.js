@@ -72,6 +72,14 @@ const userSchema = mongoose.Schema(
       required: false,
       default: null
     },
+    language: {
+      type: String,
+      default: null
+    },
+    timeZone: {
+      type: String,
+      default: null
+    },
     oneTimeCode: {
       type: String,
       required: false,
