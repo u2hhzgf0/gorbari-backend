@@ -10,8 +10,6 @@ router
   .get(subscriptionController.subscriptionList)
   .post(auth("admin"), subscriptionController.subscriptionCreate);
 
-
-
 router
   .route("/take")
   .post(auth("common"), subscriptionController.takeSubscription);

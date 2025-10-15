@@ -105,7 +105,48 @@ const userSchema = mongoose.Schema(
       type: Boolean,
       default: false
     },
-
+    promotion: {
+      type: Number,
+      default: 0
+    },
+    propertyPhotos: {
+      type: Number,
+      default: 1
+    },
+    subscription: {
+      subscriptionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: false,
+        ref: "Subscription",
+      },
+      transactionId: {
+        type: String,
+        required: false,
+      },
+      subscriptionExpirationDate: {
+        type: Date,
+        required: false,
+        default: null,
+      },
+      status: {
+        type: String,
+        enum: [
+          "active",
+          "past_due",
+          "canceled",
+          "unpaid",
+          "incomplete",
+          "incomplete_expired",
+          "trialing",
+          "paused",
+        ],
+        default: "trialing",
+      },
+      isSubscriptionTaken: {
+        type: Boolean,
+        default: false,
+      },
+    },
     securitySettings: {
       recoveryEmail: {
         type: String,

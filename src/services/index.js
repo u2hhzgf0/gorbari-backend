@@ -6,3 +6,4 @@ module.exports.propertyService = require('./property.service');
 module.exports.infoService = require('./info.service');
 module.exports.contactService = require("./contact.service");
 module.exports.subscriptionService = require('./subscription.service');
+module.exports.transactionService = require('./transaction.service');

@@ -4,3 +4,4 @@ module.exports.propertyController = require('./property.controller');
 module.exports.infoController = require('./info.controller');
 module.exports.contactController = require("./contact.controller");
 module.exports.subscriptionController = require("./subscription.controller")
+module.exports.transactionController = require("./transaction.controller")
