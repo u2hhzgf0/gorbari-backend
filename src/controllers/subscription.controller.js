@@ -98,10 +98,16 @@ const subscriptionList = catchAsync(async (req, res) => {
 
 
 const takeSubscription = catchAsync(async (req, res) => {
+
+  if (req.file) {
+    req.body.screenshot = "/uploads/other/" + req.file.filename;
+  }
+
   const result = await subscriptionService.takeSubscriptions(
     req.user.id,
     req.body
   );
+
   res.status(httpStatus.CREATED).json(
     response({
       message: "Thank you for choosing our subscription plan. Please wait for admin review.",
@@ -113,6 +119,21 @@ const takeSubscription = catchAsync(async (req, res) => {
 });
 
 
+const approvedSubscriptions = catchAsync(async (req, res) => {
+  const result = await subscriptionService.takeSubscriptions(
+    req.body.transactionId,
+  );
+  
+  res.status(httpStatus.CREATED).json(
+    response({
+      message: "Subscriptin Approved.",
+      status: "OK",
+      statusCode: httpStatus.CREATED,
+      data: result,
+    })
+  );
+});
+
 
 module.exports = {
   subscriptionCreate,
@@ -122,4 +143,5 @@ module.exports = {
   subscriptionList,
 
   takeSubscription,
+  approvedSubscriptions,
 };

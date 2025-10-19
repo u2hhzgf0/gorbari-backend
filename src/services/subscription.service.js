@@ -3,7 +3,7 @@ const { Subscription, Payment } = require("../models");
 const ApiError = require("../utils/ApiError");
 const mongoose = require("mongoose");
 const { getUserById } = require("./user.service");
-const { transactionService } = require(".");
+const transactionService = require("./transaction.service");
 
 const createSubscription = async (subscriptionBody) => {
   const subscription = await Subscription.create(subscriptionBody);
@@ -105,6 +105,32 @@ const takeSubscriptions = async (userId, subData) => {
   return transaction;
 };
 
+const approvedSubscriptions = async (transactionId) => {
+  const transaction = await transactionService.getTransactionById(transactionId);
+
+  if(!transaction){
+    throw new ApiError(httpStatus.NOT_FOUND, "Transaction not found");
+  }
+  if (transaction.status !== "pending") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Transaction is not pending");
+  }
+
+  transaction.status = "completed";
+  await transaction.save();
+
+  const user = await getUserById(transaction)
+
+  user.subscription = {
+    status: "active",
+    isSubscriptionTaken: true,
+  };
+
+  await user.save();
+
+  return transaction;
+};
+
+
 const updatePayment = async (paymentData) => {
   const payment = await Payment.findOne({
     checkoutSessionId: paymentData.checkoutSessionId,
@@ -148,4 +174,5 @@ module.exports = {
   takeSubscriptions,
   updatePayment,
   findPaymentByStripSubId,
+  approvedSubscriptions,
 };
