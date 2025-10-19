@@ -132,6 +132,7 @@ const userSchema = mongoose.Schema(
         type: String,
         enum: [
           "active",
+          "pending",
           "past_due",
           "canceled",
           "unpaid",

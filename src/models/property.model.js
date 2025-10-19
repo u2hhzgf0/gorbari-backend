@@ -143,6 +143,14 @@ const propertySchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isBosted: {
+      type: Boolean,
+      default: false,
+    },
+    bosteExpiry: {
+      type: Date,
+      default: null,
+    },
     isDeleted: {
       type: Boolean,
       default: false,

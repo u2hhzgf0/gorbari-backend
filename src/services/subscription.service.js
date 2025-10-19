@@ -3,6 +3,7 @@ const { Subscription, Payment } = require("../models");
 const ApiError = require("../utils/ApiError");
 const mongoose = require("mongoose");
 const { getUserById } = require("./user.service");
+const { transactionService } = require(".");
 
 const createSubscription = async (subscriptionBody) => {
   const subscription = await Subscription.create(subscriptionBody);
@@ -14,7 +15,10 @@ const getSubscriptionById = async (id) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid Subscription ID");
   }
 
-  const subscription = await Subscription.findOne({ _id: id, isDeleted: false });
+  const subscription = await Subscription.findOne({
+    _id: id,
+    isDeleted: false,
+  });
 
   if (!subscription) {
     throw new ApiError(httpStatus.NOT_FOUND, "Subscription not found");
@@ -72,41 +76,33 @@ const querySubscriptions = async (filter, options) => {
   return subscriptions;
 };
 
-
-
 const takeSubscriptions = async (userId, subData) => {
   const user = await getUserById(userId);
 
-
-
-  if (!stripeCustomer) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Stripe Customer not fount");
-  }
-
-  const subDataForCreate = {
-    priceId: subData.stripePriceId,
-    userId: user?._id,
-    email: user.email,
-    subscriptionLimitation: subData.days,
+  const subDatas = {
+    user: user._id,
+    subscriptionId: subData.subscriptionId,
+    status: "pending",
+    subscriptionLimitation: subData.days || 0,
+    subscriptionExpirationDate: new Date() + subData.days,
+    type: subData.type,
+    amount: subData.amount,
+    screenshot: subData.screenshot || null,
+    transactionId: subData.transactionId || null,
   };
 
+  const transaction = await transactionService.createTransaction(subDatas);
 
+  user.subscription = {
+    subscriptionId: subData.subscriptionId,
+    transactionId: transaction._id,
+    subscriptionExpirationDate: subDatas.subscriptionExpirationDate,
+    status: "pending",
+  };
 
-  if (subscription) {
-    console.log(`Stripe Subscription Created Successfully!`);
-  }
+  await user.save();
 
-  const payment = await Payment.create({
-    user: userId,
-    amount: subData.amount,
-    status: "panding",
-    subscriptionId: subData.subscriptionId || "",
-    stripePriceId: subData.stripePriceId || "",
-    checkoutSessionId: subscription.id || "",
-    subscriptionLimitation: subData.days,
-  });
-
-  return subscription;
+  return transaction;
 };
 
 const updatePayment = async (paymentData) => {
@@ -133,7 +129,10 @@ const findPaymentByStripSubId = async (stripeSubId) => {
   const payment = await Payment.findOne({ stripeSubId: stripeSubId });
 
   if (!payment) {
-    throw new ApiError(httpStatus.NOT_FOUND, "The payment is not found findPaymentByStripSubId");
+    throw new ApiError(
+      httpStatus.NOT_FOUND,
+      "The payment is not found findPaymentByStripSubId"
+    );
   }
 
   return payment;
@@ -148,5 +147,5 @@ module.exports = {
 
   takeSubscriptions,
   updatePayment,
-  findPaymentByStripSubId
+  findPaymentByStripSubId,
 };

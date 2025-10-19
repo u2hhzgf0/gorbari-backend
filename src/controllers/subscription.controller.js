@@ -102,15 +102,16 @@ const takeSubscription = catchAsync(async (req, res) => {
     req.user.id,
     req.body
   );
-  res.status(httpStatus.OK).json(
+  res.status(httpStatus.CREATED).json(
     response({
-      message: "Subscription Taken",
+      message: "Thank you for choosing our subscription plan. Please wait for admin review.",
       status: "OK",
-      statusCode: httpStatus.OK,
-      data: result.url,
+      statusCode: httpStatus.CREATED,
+      data: result,
     })
   );
 });
+
 
 
 module.exports = {
