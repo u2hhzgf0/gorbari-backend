@@ -1,5 +1,5 @@
 const httpStatus = require("http-status");
-const { Transaction } = require("../models");
+const { Transaction, User } = require("../models");
 const ApiError = require("../utils/ApiError");
 const mongoose = require("mongoose");
 
@@ -57,15 +57,36 @@ const deleteTransactionById = async (transactionId) => {
 const queryTransactions = async (filter, options) => {
   const query = { isDeleted: false };
 
-  for (const key of Object.keys(filter)) {
-    if (filter[key] !== "") {
-      query[key] = filter[key];
+  // Transaction-level filters
+  if (filter.type) query.type = filter.type;
+  if (filter.transactionId) query.type = filter.transactionId;
+  if (filter.status) query.status = filter.status;
+  if (filter.user) query.user = filter.user;
+
+  /**
+   * 🔍 Filter by user fullName / email
+   */
+  if (filter.fullName || filter.email) {
+    const userQuery = {};
+
+    if (filter.fullName) {
+      userQuery.fullName = { $regex: filter.fullName, $options: "i" };
     }
+
+    if (filter.email) {
+      userQuery.email = { $regex: filter.email, $options: "i" };
+    }
+
+    const users = await User.find(userQuery).select("_id");
+    query.user = { $in: users.map((u) => u._id) };
   }
+
+  options.populate = "user,subscriptionId";
 
   const transactions = await Transaction.paginate(query, options);
   return transactions;
 };
+
 
 module.exports = {
   createTransaction,

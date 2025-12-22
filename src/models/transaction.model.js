@@ -13,6 +13,10 @@ const transactionSchema = new mongoose.Schema(
       required: true,
       min: [0, "Amount must be a positive value."],
     },
+    transactionId: {
+      type: String,
+      required: false
+    },
     subscriptionId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Subscription",
@@ -51,10 +55,6 @@ const transactionSchema = new mongoose.Schema(
     isDeleted: {
       type: Boolean,
       default: false,
-    },
-    transactionId: {
-      type: String,
-      default: null,
     },
   },
   {

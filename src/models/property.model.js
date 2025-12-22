@@ -18,10 +18,15 @@ const propertySchema = mongoose.Schema(
       trim: true,
       default: null,
     },
-    type: {
+    catagory: {
       type: String,
       enum: ["House", "Apartment", "Condo", "Land", "Commercial", "Other"],
       default: "Other",
+    },
+    type: {
+      type: String,
+      enum: ["Buy", "Rent", "Lease", "Auction"],
+      required: true,
     },
     address: {
       type: String,
@@ -146,6 +151,10 @@ const propertySchema = mongoose.Schema(
     isBosted: {
       type: Boolean,
       default: false,
+    },
+    bostedRank: {
+      type: Number,
+      default: 1
     },
     bosteExpiry: {
       type: Date,

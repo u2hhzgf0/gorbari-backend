@@ -79,14 +79,20 @@ const querySubscriptions = async (filter, options) => {
 const takeSubscriptions = async (userId, subData) => {
   const user = await getUserById(userId);
 
+  const subscription = await getSubscriptionById(subData.subscriptionId);
+
+  if(!subscription){
+    throw new ApiError(httpStatus.BAD_REQUEST, "subscription not found")
+  }
+
   const subDatas = {
     user: user._id,
     subscriptionId: subData.subscriptionId,
     status: "pending",
-    subscriptionLimitation: subData.days || 0,
-    subscriptionExpirationDate: new Date() + subData.days,
+    subscriptionLimitation: subscription.days || 0,
+    subscriptionExpirationDate: new Date() + subscription.days,
     type: subData.type,
-    amount: subData.amount,
+    amount: subscription.amount,
     screenshot: subData.screenshot || null,
     transactionId: subData.transactionId || null,
   };
@@ -118,7 +124,7 @@ const approvedSubscriptions = async (transactionId) => {
   transaction.status = "completed";
   await transaction.save();
 
-  const user = await getUserById(transaction)
+  const user = await getUserById(transaction.user);
 
   user.subscription = {
     status: "active",

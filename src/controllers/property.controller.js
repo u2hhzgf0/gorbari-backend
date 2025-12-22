@@ -1,46 +1,89 @@
 const httpStatus = require("http-status");
 const pick = require("../utils/pick");
 const response = require("../config/response");
-const { propertyService } = require("../services");
+const { propertyService, subscriptionService } = require("../services");
 const catchAsync = require("../utils/catchAsync");
 const unlinkImages = require("../common/unlinkImage");
+const ApiError = require("../utils/ApiError");
 
 const createProperty = catchAsync(async (req, res) => {
   req.body.createdBy = req.user.id;
 
-  if (req.files && req.files.images) {
+  const imagesCount = req.files?.images?.length || 0;
+
+  // ❌ No subscription
+  if (!req.user.subscription.isSubscriptionTaken) {
+    if (imagesCount > 1) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Maximum 1 image allowed. Please take a subscription plan."
+      );
+    }
+  }
+
+  // ✅ With subscription
+  if (req.user.subscription.isSubscriptionTaken) {
+    const subscription = await subscriptionService.getSubscriptionById(
+      req.user.subscription.subscriptionId
+    );
+
+    if (!subscription) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Subscription not found");
+    }
+
+    const planName = subscription.name.toLowerCase();
+
+    const imageLimits = {
+      basic: 4,
+      featured: 6,
+      premium: 15,
+    };
+
+    if (imageLimits[planName] && imagesCount > imageLimits[planName]) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        `Maximum ${imageLimits[planName]} images allowed for ${planName} plan`
+      );
+    }
+  }
+
+  // Images handling
+  if (req.files?.images) {
     req.body.images = req.files.images.map(
-      (file) => "/uploads/propertys/" + file.filename
+      (file) => `/uploads/propertys/${file.filename}`
     );
   } else if (req.body.images) {
     req.body.images = Array.isArray(req.body.images)
-      ? req.body.images.map((img) => "/uploads/propertys/" + img)
-      : ["/uploads/propertys/" + req.body.images];
+      ? req.body.images.map((img) => `/uploads/propertys/${img}`)
+      : [`/uploads/propertys/${req.body.images}`];
   }
 
-  if (req.body.other && typeof req.body.other === "string") {
+  // Parse JSON fields
+  if (typeof req.body.other === "string") {
     req.body.other = JSON.parse(req.body.other);
   }
 
-  if (req.body.features && typeof req.body.features === "string") {
+  if (typeof req.body.features === "string") {
     req.body.features = JSON.parse(req.body.features);
     req.body.isFeatures = req.body.features.length > 0;
   }
 
-  if (req.body.amenities && typeof req.body.amenities === "string") {
+  if (typeof req.body.amenities === "string") {
     req.body.amenities = JSON.parse(req.body.amenities);
   }
 
   const property = await propertyService.createProperty(req.body);
+
   res.status(httpStatus.CREATED).json(
     response({
-      message: "Property Created",
+      message: "Property created successfully",
       status: "OK",
       statusCode: httpStatus.CREATED,
       data: property,
     })
   );
 });
+
 
 const getProperties = catchAsync(async (req, res) => {
   const filter = pick(req.query, [
@@ -58,6 +101,8 @@ const getProperties = catchAsync(async (req, res) => {
     "minPrice",
     "minAreaSqFt",
     "maxAreaSqFt",
+    "status",
+    "catagory",
   ]);
 
   if (filter.minPrice || filter.maxPrice) {
@@ -113,6 +158,8 @@ const getPropertiesForAgent = catchAsync(async (req, res) => {
     "minPrice",
     "minAreaSqFt",
     "maxAreaSqFt",
+    "status",
+    "catagory",
   ]);
 
   if (filter.minPrice || filter.maxPrice) {
@@ -241,26 +288,66 @@ const getPropertyById = catchAsync(async (req, res) => {
 });
 
 const updateProperty = catchAsync(async (req, res) => {
-  if (req.files && req.files.images) {
+  const imagesCount = req.files?.images?.length || 0;
+
+  // ❌ No subscription
+  if (!req.user.subscription.isSubscriptionTaken) {
+    if (imagesCount > 1) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Maximum 1 image allowed. Please take a subscription plan."
+      );
+    }
+  }
+
+  // ✅ With subscription
+  if (req.user.subscription.isSubscriptionTaken) {
+    const subscription = await subscriptionService.getSubscriptionById(
+      req.user.subscription.subscriptionId
+    );
+
+    if (!subscription) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Subscription not found");
+    }
+
+    const planName = subscription.name.toLowerCase();
+
+    const imageLimits = {
+      basic: 4,
+      featured: 6,
+      premium: 15,
+    };
+
+    if (imageLimits[planName] && imagesCount > imageLimits[planName]) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        `Maximum ${imageLimits[planName]} images allowed for ${planName} plan`
+      );
+    }
+  }
+
+  // Images handling
+  if (req.files?.images) {
     req.body.images = req.files.images.map(
-      (file) => "/uploads/propertys/" + file.filename
+      (file) => `/uploads/propertys/${file.filename}`
     );
   } else if (req.body.images) {
     req.body.images = Array.isArray(req.body.images)
-      ? req.body.images.map((img) => "/uploads/propertys/" + img)
-      : ["/uploads/propertys/" + req.body.images];
+      ? req.body.images.map((img) => `/uploads/propertys/${img}`)
+      : [`/uploads/propertys/${req.body.images}`];
   }
 
-  if (req.body.other && typeof req.body.other === "string") {
+  // Parse JSON fields
+  if (typeof req.body.other === "string") {
     req.body.other = JSON.parse(req.body.other);
   }
 
-  if (req.body.features && typeof req.body.features === "string") {
+  if (typeof req.body.features === "string") {
     req.body.features = JSON.parse(req.body.features);
     req.body.isFeatures = req.body.features.length > 0;
   }
 
-  if (req.body.amenities && typeof req.body.amenities === "string") {
+  if (typeof req.body.amenities === "string") {
     req.body.amenities = JSON.parse(req.body.amenities);
   }
 
@@ -268,15 +355,17 @@ const updateProperty = catchAsync(async (req, res) => {
     req.params.propertyId,
     req.body
   );
+
   res.status(httpStatus.OK).json(
     response({
-      message: "Property Updated",
+      message: "Property updated successfully",
       status: "OK",
       statusCode: httpStatus.OK,
       data: property,
     })
   );
 });
+
 
 const uploadPropertyImage = catchAsync(async (req, res) => {
   if (!req.file) {

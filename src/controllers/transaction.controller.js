@@ -66,7 +66,7 @@ const transactionDeleteById = catchAsync(async (req, res) => {
 });
 
 const transactionList = catchAsync(async (req, res) => {
-  const filter = pick(req.query, ["title", "description", "type"]);
+  const filter = pick(req.query, ["type", "status", "user", "transactionId", "email"]);
   const options = pick(req.query, ["sortBy", "limit", "page"]);
   const result = await transactionService.queryTransactions(filter, options);
   res.status(httpStatus.OK).json(

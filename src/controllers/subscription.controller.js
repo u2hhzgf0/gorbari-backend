@@ -120,7 +120,7 @@ const takeSubscription = catchAsync(async (req, res) => {
 
 
 const approvedSubscriptions = catchAsync(async (req, res) => {
-  const result = await subscriptionService.takeSubscriptions(
+  const result = await subscriptionService.approvedSubscriptions(
     req.body.transactionId,
   );
   

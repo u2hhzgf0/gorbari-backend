@@ -1,7 +1,7 @@
 const express = require("express");
 const auth = require("../../middlewares/auth");
 const validate = require("../../middlewares/validate");
-const { subscriptionController } = require("../../controllers");
+const { subscriptionController, transactionController } = require("../../controllers");
 const userFileUploadMiddleware = require("../../middlewares/fileUpload");
 const convertHeicToPngMiddleware = require("../../middlewares/converter");
 const UPLOADS_FOLDER_GATEWAY = "./public/uploads/other";
@@ -9,6 +9,10 @@ const UPLOADS_FOLDER_GATEWAY = "./public/uploads/other";
 const uploadGateway = userFileUploadMiddleware(UPLOADS_FOLDER_GATEWAY);
 
 const router = express.Router();
+
+router
+  .route("/transactions")
+  .get(auth("admin"),  transactionController.transactionList);
 
 router
   .route("/")
@@ -33,5 +37,6 @@ router
 router
   .route("/approve")
   .post(auth("admin"), subscriptionController.approvedSubscriptions);
+
 
 module.exports = router;

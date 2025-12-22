@@ -14,7 +14,7 @@ const queryProperties = async (filter, options) => {
     const value = filter[key];
     if (!value || value === "") return;
 
-    if (["title", "type", "address", "city", "state", "country", "zipCode"].includes(key)) {
+    if (["title", "type", "address", "city", "state", "country", "zipCode", "status", "catagory"].includes(key)) {
       if (Array.isArray(value)) {
         matchStage[key] = {
           $in: value.map(v => new RegExp(v, "i"))
@@ -99,7 +99,7 @@ const queryPropertiesForAgent = async (filter, options, userId) => {
     const value = filter[key];
     if (!value || value === "") return;
 
-    if (["title", "type", "address", "city", "state", "country", "zipCode"].includes(key)) {
+    if (["title", "type", "address", "city", "state", "country", "zipCode", "status", "catagory"].includes(key)) {
       if (Array.isArray(value)) {
         matchStage[key] = {
           $in: value.map(v => new RegExp(v, "i"))
