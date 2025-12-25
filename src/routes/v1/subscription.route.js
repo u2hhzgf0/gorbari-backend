@@ -38,5 +38,8 @@ router
   .route("/approve")
   .post(auth("admin"), subscriptionController.approvedSubscriptions);
 
+router
+  .route("/reject")
+  .post(auth("admin"), subscriptionController.rejectSubscriptions);
 
 module.exports = router;

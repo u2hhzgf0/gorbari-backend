@@ -137,6 +137,31 @@ const approvedSubscriptions = async (transactionId) => {
 };
 
 
+const rejectSubscriptions = async (transactionId) => {
+  const transaction = await transactionService.getTransactionById(transactionId);
+
+  if(!transaction){
+    throw new ApiError(httpStatus.NOT_FOUND, "Transaction not found");
+  }
+  if (transaction.status !== "pending") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Transaction is not pending");
+  }
+
+  transaction.status = "canceled";
+  await transaction.save();
+
+  const user = await getUserById(transaction.user);
+
+  user.subscription = {
+    status: "canceled",
+    isSubscriptionTaken: false,
+  };
+
+  await user.save();
+
+  return transaction;
+};
+
 const updatePayment = async (paymentData) => {
   const payment = await Payment.findOne({
     checkoutSessionId: paymentData.checkoutSessionId,
@@ -181,4 +206,5 @@ module.exports = {
   updatePayment,
   findPaymentByStripSubId,
   approvedSubscriptions,
+  rejectSubscriptions
 };

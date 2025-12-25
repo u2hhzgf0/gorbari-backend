@@ -135,6 +135,22 @@ const approvedSubscriptions = catchAsync(async (req, res) => {
 });
 
 
+const rejectSubscriptions = catchAsync(async (req, res) => {
+  const result = await subscriptionService.rejectSubscriptions(
+    req.body.transactionId,
+  );
+  
+  res.status(httpStatus.CREATED).json(
+    response({
+      message: "Subscriptin rejected.",
+      status: "OK",
+      statusCode: httpStatus.CREATED,
+      data: {},
+    })
+  );
+});
+
+
 module.exports = {
   subscriptionCreate,
   subscriptionGetById,
@@ -144,4 +160,5 @@ module.exports = {
 
   takeSubscription,
   approvedSubscriptions,
+  rejectSubscriptions,
 };
