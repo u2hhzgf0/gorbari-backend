@@ -81,8 +81,8 @@ const takeSubscriptions = async (userId, subData) => {
 
   const subscription = await getSubscriptionById(subData.subscriptionId);
 
-  if(!subscription){
-    throw new ApiError(httpStatus.BAD_REQUEST, "subscription not found")
+  if (!subscription) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "subscription not found");
   }
 
   const subDatas = {
@@ -112,9 +112,11 @@ const takeSubscriptions = async (userId, subData) => {
 };
 
 const approvedSubscriptions = async (transactionId) => {
-  const transaction = await transactionService.getTransactionById(transactionId);
+  const transaction = await transactionService.getTransactionById(
+    transactionId
+  );
 
-  if(!transaction){
+  if (!transaction) {
     throw new ApiError(httpStatus.NOT_FOUND, "Transaction not found");
   }
   if (transaction.status !== "pending") {
@@ -127,20 +129,21 @@ const approvedSubscriptions = async (transactionId) => {
   const user = await getUserById(transaction.user);
 
   user.subscription = {
+    ...user.subscription.toObject(),
     status: "active",
     isSubscriptionTaken: true,
   };
-
   await user.save();
 
   return transaction;
 };
 
-
 const rejectSubscriptions = async (transactionId) => {
-  const transaction = await transactionService.getTransactionById(transactionId);
+  const transaction = await transactionService.getTransactionById(
+    transactionId
+  );
 
-  if(!transaction){
+  if (!transaction) {
     throw new ApiError(httpStatus.NOT_FOUND, "Transaction not found");
   }
   if (transaction.status !== "pending") {
@@ -153,6 +156,7 @@ const rejectSubscriptions = async (transactionId) => {
   const user = await getUserById(transaction.user);
 
   user.subscription = {
+    ...user.subscription.toObject(),
     status: "canceled",
     isSubscriptionTaken: false,
   };
@@ -206,5 +210,5 @@ module.exports = {
   updatePayment,
   findPaymentByStripSubId,
   approvedSubscriptions,
-  rejectSubscriptions
+  rejectSubscriptions,
 };

@@ -84,7 +84,6 @@ const createProperty = catchAsync(async (req, res) => {
   );
 });
 
-
 const getProperties = catchAsync(async (req, res) => {
   const filter = pick(req.query, [
     "title",
@@ -365,7 +364,6 @@ const updateProperty = catchAsync(async (req, res) => {
     })
   );
 });
-
 
 const uploadPropertyImage = catchAsync(async (req, res) => {
   if (!req.file) {

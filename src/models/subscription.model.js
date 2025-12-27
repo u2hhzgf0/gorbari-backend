@@ -46,6 +46,26 @@ const subscriptionSchema = mongoose.Schema(
       required: true,
       min: [0, "Day must be a positive."],
     },
+    propertyPromotionCradit: {
+      type: Number,
+      required: true,
+    },
+    propertyImageCradit: {
+      type: Number,
+      required: true,
+    },
+    propertyVideoCradit: {
+      type: Number,
+      required: true,
+    },
+    isViewsContact: {
+      type: Boolean,
+      default: false,
+    },
+    isEmailSupport: {
+      type: Boolean,
+      default: false,
+    },
     isDeleted: {
       type: Boolean,
       default: false,

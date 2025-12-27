@@ -13,7 +13,7 @@ const getTransactionById = async (id) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid Transaction ID");
   }
 
-  const transaction = await Transaction.findOne({ _id: id, isDeleted: false });
+  const transaction = await Transaction.findOne({ _id: id, isDeleted: false }).populate('user subscriptionId');
 
   if (!transaction) {
     throw new ApiError(httpStatus.NOT_FOUND, "Transaction not found");
