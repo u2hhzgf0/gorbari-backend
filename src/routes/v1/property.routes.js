@@ -47,4 +47,11 @@ router
   )
   .delete(auth("common"), propertyController.deleteProperty);
 
+  router
+  .route("/:propertyId/bost")
+  .post(
+    auth("common"),
+    propertyController.boostProperty
+  );
+
 module.exports = router;

@@ -9,56 +9,75 @@ const createProperty = async (propertyBody) => {
 
 const queryProperties = async (filter, options) => {
   const matchStage = { isDeleted: false };
-  
+
   Object.keys(filter).forEach((key) => {
     const value = filter[key];
     if (!value || value === "") return;
 
-    if (["title", "type", "address", "city", "state", "country", "zipCode", "status", "catagory"].includes(key)) {
+    if (
+      [
+        "title",
+        "type",
+        "address",
+        "city",
+        "state",
+        "country",
+        "zipCode",
+        "status",
+        "catagory",
+      ].includes(key)
+    ) {
       if (Array.isArray(value)) {
         matchStage[key] = {
-          $in: value.map(v => new RegExp(v, "i"))
+          $in: value.map((v) => new RegExp(v, "i")),
         };
-      } else if (typeof value === 'string' && value.includes(',')) {
+      } else if (typeof value === "string" && value.includes(",")) {
         // Split comma-separated values
-        const values = value.split(',').map(v => v.trim()).filter(v => v);
+        const values = value
+          .split(",")
+          .map((v) => v.trim())
+          .filter((v) => v);
         matchStage[key] = {
-          $in: values.map(v => new RegExp(v, "i"))
+          $in: values.map((v) => new RegExp(v, "i")),
         };
       } else {
         matchStage[key] = { $regex: value, $options: "i" };
       }
-    } else if (typeof value === "object" && (value.min !== undefined || value.max !== undefined)) {
+    } else if (
+      typeof value === "object" &&
+      (value.min !== undefined || value.max !== undefined)
+    ) {
       matchStage[key] = {};
       if (value.min !== undefined) matchStage[key].$gte = Number(value.min);
       if (value.max !== undefined) matchStage[key].$lte = Number(value.max);
     } else if (Array.isArray(value)) {
-      matchStage[key] = { $in: value.map(v => isNaN(v) ? v : Number(v)) };
-    } else if (typeof value === 'string' && value.includes(',')) {
-      const values = value.split(',').map(v => v.trim()).filter(v => v);
-      matchStage[key] = { $in: values.map(v => isNaN(v) ? v : Number(v)) };
+      matchStage[key] = { $in: value.map((v) => (isNaN(v) ? v : Number(v))) };
+    } else if (typeof value === "string" && value.includes(",")) {
+      const values = value
+        .split(",")
+        .map((v) => v.trim())
+        .filter((v) => v);
+      matchStage[key] = { $in: values.map((v) => (isNaN(v) ? v : Number(v))) };
     } else {
       matchStage[key] = isNaN(value) ? value : Number(value);
     }
   });
 
-  const pipeline = [
-    { $match: matchStage }
-  ];
+  const pipeline = [{ $match: matchStage }];
 
   // Add sorting
   if (options.sortBy) {
-    const sortFields = options.sortBy.split(',');
+    const sortFields = options.sortBy.split(",");
     const sortStage = {};
-    
-    sortFields.forEach(field => {
-      if (field.startsWith('-')) {
+
+    sortFields.forEach((field) => {
+      if (field.startsWith("-")) {
         sortStage[field.substring(1)] = -1;
       } else {
         sortStage[field] = 1;
       }
     });
-    
+
     pipeline.push({ $sort: sortStage });
   } else {
     pipeline.push({ $sort: { createdAt: -1 } });
@@ -69,14 +88,9 @@ const queryProperties = async (filter, options) => {
 
   pipeline.push({
     $facet: {
-      results: [
-        { $skip: skip },
-        { $limit: limit }
-      ],
-      totalCount: [
-        { $count: "count" }
-      ]
-    }
+      results: [{ $skip: skip }, { $limit: limit }],
+      totalCount: [{ $count: "count" }],
+    },
   });
 
   const [result] = await Property.aggregate(pipeline);
@@ -88,62 +102,84 @@ const queryProperties = async (filter, options) => {
     page,
     limit,
     totalPages,
-    totalResults
+    totalResults,
   };
 };
 
 const queryPropertiesForAgent = async (filter, options, userId) => {
-  const matchStage = { createdBy: new mongoose.Types.ObjectId(userId), isDeleted: false };
-  
+  const matchStage = {
+    createdBy: new mongoose.Types.ObjectId(userId),
+    isDeleted: false,
+  };
+
   Object.keys(filter).forEach((key) => {
     const value = filter[key];
     if (!value || value === "") return;
 
-    if (["title", "type", "address", "city", "state", "country", "zipCode", "status", "catagory"].includes(key)) {
+    if (
+      [
+        "title",
+        "type",
+        "address",
+        "city",
+        "state",
+        "country",
+        "zipCode",
+        "status",
+        "catagory",
+      ].includes(key)
+    ) {
       if (Array.isArray(value)) {
         matchStage[key] = {
-          $in: value.map(v => new RegExp(v, "i"))
+          $in: value.map((v) => new RegExp(v, "i")),
         };
-      } else if (typeof value === 'string' && value.includes(',')) {
+      } else if (typeof value === "string" && value.includes(",")) {
         // Split comma-separated values
-        const values = value.split(',').map(v => v.trim()).filter(v => v);
+        const values = value
+          .split(",")
+          .map((v) => v.trim())
+          .filter((v) => v);
         matchStage[key] = {
-          $in: values.map(v => new RegExp(v, "i"))
+          $in: values.map((v) => new RegExp(v, "i")),
         };
       } else {
         matchStage[key] = { $regex: value, $options: "i" };
       }
-    } else if (typeof value === "object" && (value.min !== undefined || value.max !== undefined)) {
+    } else if (
+      typeof value === "object" &&
+      (value.min !== undefined || value.max !== undefined)
+    ) {
       matchStage[key] = {};
       if (value.min !== undefined) matchStage[key].$gte = Number(value.min);
       if (value.max !== undefined) matchStage[key].$lte = Number(value.max);
     } else if (Array.isArray(value)) {
-      matchStage[key] = { $in: value.map(v => isNaN(v) ? v : Number(v)) };
-    } else if (typeof value === 'string' && value.includes(',')) {
-      const values = value.split(',').map(v => v.trim()).filter(v => v);
-      matchStage[key] = { $in: values.map(v => isNaN(v) ? v : Number(v)) };
+      matchStage[key] = { $in: value.map((v) => (isNaN(v) ? v : Number(v))) };
+    } else if (typeof value === "string" && value.includes(",")) {
+      const values = value
+        .split(",")
+        .map((v) => v.trim())
+        .filter((v) => v);
+      matchStage[key] = { $in: values.map((v) => (isNaN(v) ? v : Number(v))) };
     } else {
       matchStage[key] = isNaN(value) ? value : Number(value);
     }
   });
 
-  const pipeline = [
-    { $match: matchStage }
-  ];
+  const pipeline = [{ $match: matchStage }];
 
   // Add sorting
   if (options.sortBy) {
-    const sortFields = options.sortBy.split(',');
+    const sortFields = options.sortBy.split(",");
     const sortStage = {};
-    
-    sortFields.forEach(field => {
-      if (field.startsWith('-')) {
+
+    sortFields.forEach((field) => {
+      if (field.startsWith("-")) {
         sortStage[field.substring(1)] = -1;
       } else {
         sortStage[field] = 1;
       }
     });
-    
+
     pipeline.push({ $sort: sortStage });
   } else {
     pipeline.push({ $sort: { createdAt: -1 } });
@@ -154,14 +190,9 @@ const queryPropertiesForAgent = async (filter, options, userId) => {
 
   pipeline.push({
     $facet: {
-      results: [
-        { $skip: skip },
-        { $limit: limit }
-      ],
-      totalCount: [
-        { $count: "count" }
-      ]
-    }
+      results: [{ $skip: skip }, { $limit: limit }],
+      totalCount: [{ $count: "count" }],
+    },
   });
 
   const [result] = await Property.aggregate(pipeline);
@@ -173,13 +204,15 @@ const queryPropertiesForAgent = async (filter, options, userId) => {
     page,
     limit,
     totalPages,
-    totalResults
+    totalResults,
   };
 };
 
-
 const getPropertyById = async (id) => {
-  return Property.findOne({ _id: id, isDeleted: false }).populate("createdBy", "fullName profileImage");
+  return Property.findOne({ _id: id, isDeleted: false }).populate(
+    "createdBy",
+    "fullName profileImage"
+  );
 };
 
 const updatePropertyById = async (propertyId, updateBody) => {
@@ -226,6 +259,20 @@ const deletePropertyById = async (propertyId) => {
   return property;
 };
 
+const bostProperty = async (propertyId, bostData) => {
+  const property = await getPropertyById(propertyId);
+  if (!property) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Property not found");
+  }
+
+  property.isBosted = bostData.isBosted;
+  property.bostedRank = bostData.bostedRank;
+  property.bosteExpiry = bostData.bosteExpiry;
+
+  await property.save();
+  return property;
+};
+
 module.exports = {
   createProperty,
   queryProperties,
@@ -234,5 +281,7 @@ module.exports = {
   uploadPropertyImage,
   deletePropertyImage,
   deletePropertyById,
-  queryPropertiesForAgent
+  queryPropertiesForAgent,
+
+  bostProperty,
 };

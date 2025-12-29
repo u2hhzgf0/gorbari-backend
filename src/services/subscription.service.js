@@ -104,6 +104,7 @@ const takeSubscriptions = async (userId, subData) => {
     transactionId: transaction._id,
     subscriptionExpirationDate: subDatas.subscriptionExpirationDate,
     status: "pending",
+    bostProperty: subscription.bostProperty
   };
 
   await user.save();

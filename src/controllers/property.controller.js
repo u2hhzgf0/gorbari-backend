@@ -5,6 +5,7 @@ const { propertyService, subscriptionService } = require("../services");
 const catchAsync = require("../utils/catchAsync");
 const unlinkImages = require("../common/unlinkImage");
 const ApiError = require("../utils/ApiError");
+const { default: mongoose } = require("mongoose");
 
 const createProperty = catchAsync(async (req, res) => {
   req.body.createdBy = req.user.id;
@@ -21,7 +22,7 @@ const createProperty = catchAsync(async (req, res) => {
     }
   }
 
-  // ✅ With subscription
+  // ✅ With subscription (credit-based validation)
   if (req.user.subscription.isSubscriptionTaken) {
     const subscription = await subscriptionService.getSubscriptionById(
       req.user.subscription.subscriptionId
@@ -31,18 +32,12 @@ const createProperty = catchAsync(async (req, res) => {
       throw new ApiError(httpStatus.BAD_REQUEST, "Subscription not found");
     }
 
-    const planName = subscription.name.toLowerCase();
+    const maxImages = subscription.propertyImageCradit;
 
-    const imageLimits = {
-      basic: 4,
-      featured: 6,
-      premium: 15,
-    };
-
-    if (imageLimits[planName] && imagesCount > imageLimits[planName]) {
+    if (imagesCount > maxImages) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        `Maximum ${imageLimits[planName]} images allowed for ${planName} plan`
+        `Maximum ${maxImages} images allowed for your subscription plan`
       );
     }
   }
@@ -83,6 +78,7 @@ const createProperty = catchAsync(async (req, res) => {
     })
   );
 });
+
 
 const getProperties = catchAsync(async (req, res) => {
   const filter = pick(req.query, [
@@ -299,7 +295,7 @@ const updateProperty = catchAsync(async (req, res) => {
     }
   }
 
-  // ✅ With subscription
+  // ✅ With subscription (credit-based validation)
   if (req.user.subscription.isSubscriptionTaken) {
     const subscription = await subscriptionService.getSubscriptionById(
       req.user.subscription.subscriptionId
@@ -309,18 +305,12 @@ const updateProperty = catchAsync(async (req, res) => {
       throw new ApiError(httpStatus.BAD_REQUEST, "Subscription not found");
     }
 
-    const planName = subscription.name.toLowerCase();
+    const maxImages = subscription.propertyImageCradit;
 
-    const imageLimits = {
-      basic: 4,
-      featured: 6,
-      premium: 15,
-    };
-
-    if (imageLimits[planName] && imagesCount > imageLimits[planName]) {
+    if (imagesCount > maxImages) {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
-        `Maximum ${imageLimits[planName]} images allowed for ${planName} plan`
+        `Maximum ${maxImages} images allowed for your subscription plan`
       );
     }
   }
@@ -370,8 +360,50 @@ const uploadPropertyImage = catchAsync(async (req, res) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "No image uploaded");
   }
 
-  const imagePath = "/uploads/propertys/" + req.file.filename;
-  const property = await propertyService.uploadPropertyImage(
+  // Get property first (to count existing images)
+  const property = await propertyService.getPropertyById(
+    req.params.propertyId
+  );
+
+  if (!property) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Property not found");
+  }
+
+  const existingImagesCount = property.images?.length || 0;
+
+  // ❌ No subscription
+  if (!req.user.subscription.isSubscriptionTaken) {
+    if (existingImagesCount >= 1) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        "Maximum 1 image allowed. Please take a subscription plan."
+      );
+    }
+  }
+
+  // ✅ With subscription (credit-based validation)
+  if (req.user.subscription.isSubscriptionTaken) {
+    const subscription = await subscriptionService.getSubscriptionById(
+      req.user.subscription.subscriptionId
+    );
+
+    if (!subscription) {
+      throw new ApiError(httpStatus.BAD_REQUEST, "Subscription not found");
+    }
+
+    const maxImages = subscription.propertyImageCradit;
+
+    if (existingImagesCount + 1 > maxImages) {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        `Maximum ${maxImages} images allowed for your subscription plan`
+      );
+    }
+  }
+
+  const imagePath = `/uploads/propertys/${req.file.filename}`;
+
+  const updatedProperty = await propertyService.uploadPropertyImage(
     req.params.propertyId,
     imagePath
   );
@@ -381,7 +413,7 @@ const uploadPropertyImage = catchAsync(async (req, res) => {
       message: "Image uploaded successfully",
       status: "OK",
       statusCode: httpStatus.OK,
-      data: property,
+      data: updatedProperty,
     })
   );
 });
@@ -416,6 +448,81 @@ const deleteProperty = catchAsync(async (req, res) => {
   );
 });
 
+const boostProperty = catchAsync(async (req, res) => {
+  const user = req.user;
+  const { propertyId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(propertyId)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid property ID");
+  }
+
+  if (!user.subscription || !user.subscription.isSubscriptionTaken) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "You are not subscribed. Please take a subscription first."
+    );
+  }
+
+  if (new Date(user.subscription.subscriptionExpirationDate) < new Date()) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "Your subscription has expired. Please renew your subscription."
+    );
+  }
+
+  if (!user.subscription.boostProperty || user.subscription.boostProperty <= 0) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "You have no boost property limit remaining."
+    );
+  }
+
+  const subscription = await subscriptionService.getSubscriptionById(
+    user.subscription.subscriptionId
+  );
+
+  if (!subscription) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Subscription not found");
+  }
+
+  const property = await propertyService.getPropertyById(propertyId);
+  if (!property) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Property not found");
+  }
+
+  if (property.isBoosted) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "This property is already boosted"
+    );
+  }
+
+  const boostData = {
+    isBoosted: true,
+    boostedRank: subscription.rank || 1,
+    boostExpiry: user.subscription.subscriptionExpirationDate,
+  };
+
+  const boostedProperty = await propertyService.boostProperty(
+    propertyId,
+    boostData
+  );
+
+  user.subscription.boostProperty -= 1;
+  await user.save();
+
+  res.status(httpStatus.OK).json(
+    response({
+      message: "Property boosted successfully",
+      status: "OK",
+      statusCode: httpStatus.OK,
+      data: boostedProperty,
+    })
+  );
+});
+
+
+
 module.exports = {
   createProperty,
   getProperties,
@@ -425,4 +532,6 @@ module.exports = {
   deletePropertyImage,
   deleteProperty,
   getPropertiesForAgent,
+
+  boostProperty,
 };

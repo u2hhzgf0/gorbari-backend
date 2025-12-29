@@ -17,9 +17,9 @@ const subscriptionSchema = mongoose.Schema(
       default: null,
     },
     subTitle: {
-        type: String,
-        require: false,
-        default: null
+      type: String,
+      require: false,
+      default: null,
     },
     description: {
       type: String,
@@ -61,6 +61,15 @@ const subscriptionSchema = mongoose.Schema(
     isViewsContact: {
       type: Boolean,
       default: false,
+    },
+    boostProperty: {
+      type: Number,
+      required: false,
+    },
+    bostCraditn: {
+      type: Number,
+      required: false,
+      default: 1,
     },
     isEmailSupport: {
       type: Boolean,

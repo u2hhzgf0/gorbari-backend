@@ -123,6 +123,10 @@ const userSchema = mongoose.Schema(
         type: String,
         required: false,
       },
+      bostProperty: {
+        type: Number,
+        default: null
+      },
       subscriptionExpirationDate: {
         type: Date,
         required: false,
