@@ -154,11 +154,15 @@ const propertySchema = mongoose.Schema(
     },
     bostedRank: {
       type: Number,
-      default: 1
+      default: 1,
     },
     bosteExpiry: {
       type: Date,
       default: null,
+    },
+    isHidden: {
+      type: Boolean,
+      default: false,
     },
     isDeleted: {
       type: Boolean,

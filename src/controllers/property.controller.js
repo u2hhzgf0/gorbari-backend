@@ -12,37 +12,39 @@ const createProperty = catchAsync(async (req, res) => {
 
   const imagesCount = req.files?.images?.length || 0;
 
-  // ❌ No subscription
-  if (!req.user.subscription.isSubscriptionTaken) {
-    if (imagesCount > 1) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        "Maximum 1 image allowed. Please take a subscription plan."
+  if (req.user.role !== "admin") {
+
+    // ❌ No subscription
+    if (!req.user.subscription?.isSubscriptionTaken) {
+      if (imagesCount > 1) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          "Maximum 1 image allowed. Please take a subscription plan."
+        );
+      }
+    }
+
+    // ✅ With subscription (credit-based validation)
+    if (req.user.subscription?.isSubscriptionTaken) {
+      const subscription = await subscriptionService.getSubscriptionById(
+        req.user.subscription.subscriptionId
       );
+
+      if (!subscription) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Subscription not found");
+      }
+
+      const maxImages = subscription.propertyImageCradit;
+
+      if (imagesCount > maxImages) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          `Maximum ${maxImages} images allowed for your subscription plan`
+        );
+      }
     }
   }
 
-  // ✅ With subscription (credit-based validation)
-  if (req.user.subscription.isSubscriptionTaken) {
-    const subscription = await subscriptionService.getSubscriptionById(
-      req.user.subscription.subscriptionId
-    );
-
-    if (!subscription) {
-      throw new ApiError(httpStatus.BAD_REQUEST, "Subscription not found");
-    }
-
-    const maxImages = subscription.propertyImageCradit;
-
-    if (imagesCount > maxImages) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        `Maximum ${maxImages} images allowed for your subscription plan`
-      );
-    }
-  }
-
-  // Images handling
   if (req.files?.images) {
     req.body.images = req.files.images.map(
       (file) => `/uploads/propertys/${file.filename}`
@@ -53,7 +55,6 @@ const createProperty = catchAsync(async (req, res) => {
       : [`/uploads/propertys/${req.body.images}`];
   }
 
-  // Parse JSON fields
   if (typeof req.body.other === "string") {
     req.body.other = JSON.parse(req.body.other);
   }
@@ -78,6 +79,7 @@ const createProperty = catchAsync(async (req, res) => {
     })
   );
 });
+
 
 
 const getProperties = catchAsync(async (req, res) => {
@@ -285,33 +287,37 @@ const getPropertyById = catchAsync(async (req, res) => {
 const updateProperty = catchAsync(async (req, res) => {
   const imagesCount = req.files?.images?.length || 0;
 
-  // ❌ No subscription
-  if (!req.user.subscription.isSubscriptionTaken) {
-    if (imagesCount > 1) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        "Maximum 1 image allowed. Please take a subscription plan."
-      );
-    }
-  }
+  // ✅ ADMIN: Skip subscription & image limit checks
+  if (req.user.role !== "admin") {
 
-  // ✅ With subscription (credit-based validation)
-  if (req.user.subscription.isSubscriptionTaken) {
-    const subscription = await subscriptionService.getSubscriptionById(
-      req.user.subscription.subscriptionId
-    );
-
-    if (!subscription) {
-      throw new ApiError(httpStatus.BAD_REQUEST, "Subscription not found");
+    // ❌ No subscription
+    if (!req.user.subscription?.isSubscriptionTaken) {
+      if (imagesCount > 1) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          "Maximum 1 image allowed. Please take a subscription plan."
+        );
+      }
     }
 
-    const maxImages = subscription.propertyImageCradit;
-
-    if (imagesCount > maxImages) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        `Maximum ${maxImages} images allowed for your subscription plan`
+    // ✅ With subscription (credit-based validation)
+    if (req.user.subscription?.isSubscriptionTaken) {
+      const subscription = await subscriptionService.getSubscriptionById(
+        req.user.subscription.subscriptionId
       );
+
+      if (!subscription) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Subscription not found");
+      }
+
+      const maxImages = subscription.propertyImageCradit;
+
+      if (imagesCount > maxImages) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          `Maximum ${maxImages} images allowed for your subscription plan`
+        );
+      }
     }
   }
 
@@ -355,6 +361,7 @@ const updateProperty = catchAsync(async (req, res) => {
   );
 });
 
+
 const uploadPropertyImage = catchAsync(async (req, res) => {
   if (!req.file) {
     throw new ApiError(httpStatus.BAD_REQUEST, "No image uploaded");
@@ -371,33 +378,37 @@ const uploadPropertyImage = catchAsync(async (req, res) => {
 
   const existingImagesCount = property.images?.length || 0;
 
-  // ❌ No subscription
-  if (!req.user.subscription.isSubscriptionTaken) {
-    if (existingImagesCount >= 1) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        "Maximum 1 image allowed. Please take a subscription plan."
-      );
-    }
-  }
+  // ✅ ADMIN: Skip subscription & image limit checks
+  if (req.user.role !== "admin") {
 
-  // ✅ With subscription (credit-based validation)
-  if (req.user.subscription.isSubscriptionTaken) {
-    const subscription = await subscriptionService.getSubscriptionById(
-      req.user.subscription.subscriptionId
-    );
-
-    if (!subscription) {
-      throw new ApiError(httpStatus.BAD_REQUEST, "Subscription not found");
+    // ❌ No subscription
+    if (!req.user.subscription?.isSubscriptionTaken) {
+      if (existingImagesCount >= 1) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          "Maximum 1 image allowed. Please take a subscription plan."
+        );
+      }
     }
 
-    const maxImages = subscription.propertyImageCradit;
-
-    if (existingImagesCount + 1 > maxImages) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        `Maximum ${maxImages} images allowed for your subscription plan`
+    // ✅ With subscription (credit-based validation)
+    if (req.user.subscription?.isSubscriptionTaken) {
+      const subscription = await subscriptionService.getSubscriptionById(
+        req.user.subscription.subscriptionId
       );
+
+      if (!subscription) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Subscription not found");
+      }
+
+      const maxImages = subscription.propertyImageCradit;
+
+      if (existingImagesCount + 1 > maxImages) {
+        throw new ApiError(
+          httpStatus.BAD_REQUEST,
+          `Maximum ${maxImages} images allowed for your subscription plan`
+        );
+      }
     }
   }
 
@@ -417,6 +428,7 @@ const uploadPropertyImage = catchAsync(async (req, res) => {
     })
   );
 });
+
 
 const deletePropertyImage = catchAsync(async (req, res) => {
   const { imagePath } = req.body;

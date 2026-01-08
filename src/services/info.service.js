@@ -1,5 +1,5 @@
 const httpStatus = require("http-status");
-const { Favorite } = require("../models");
+const { Favorite, Property, Transaction, User } = require("../models");
 const ApiError = require("../utils/ApiError");
 const propertyService = require("./property.service");
 
@@ -122,6 +122,91 @@ const deleteFavoriteById = async (favoriteId) => {
   return favorite;
 };
 
+const getAllStatus = async (year, user) => {
+  const propertyQuery = { isDeleted: false };
+  const transactionQuery = { isDeleted: false, status: "completed" };
+
+  // Agent: only own data
+  if (user.role === "agent") {
+    propertyQuery.createdBy = user._id;
+  }
+
+  // ---- PROPERTY STATS ----
+  const totalProperty = await Property.countDocuments(propertyQuery);
+
+  const viewsResult = await Property.aggregate([
+    { $match: propertyQuery },
+    {
+      $group: {
+        _id: null,
+        totalViews: { $sum: "$views" },
+      },
+    },
+  ]);
+
+  const totalViews = viewsResult[0]?.totalViews || 0;
+
+  // ---- ADMIN ONLY ----
+  if (user.role === "admin") {
+    const revenueResult = await Transaction.aggregate([
+      { $match: transactionQuery },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$amount" },
+        },
+      },
+    ]);
+
+    const totalRevenue = revenueResult[0]?.totalRevenue || 0;
+
+    const totalUsers = await User.countDocuments({
+      isDeleted: false,
+      role: "user",
+    });
+
+    const totalAgents = await User.countDocuments({
+      isDeleted: false,
+      role: "agent",
+    });
+
+    // ✅ NEW COUNTS
+    const unVerifiedUser = await User.countDocuments({
+      isDeleted: false,
+      isEmailVerified: false,
+    });
+
+    const verifiedUser = await User.countDocuments({
+      isDeleted: false,
+      isEmailVerified: true,
+    });
+
+    const subscripedAgents = await User.countDocuments({
+      isDeleted: false,
+      role: "agent",
+      "subscription.isSubscriptionTaken": true,
+    });
+
+    // ✅ ADMIN RESPONSE
+    return {
+      totalProperty,
+      totalViews,
+      totalRevenue,
+      totalUsers,
+      totalAgents,
+      unVerifiedUser,
+      verifiedUser,
+      subscripedAgents,
+    };
+  }
+
+  // ✅ AGENT / USER RESPONSE
+  return {
+    totalProperty,
+    totalViews,
+  };
+};
+
 module.exports = {
   createFavorite,
   queryFavorites,
@@ -130,4 +215,6 @@ module.exports = {
   deleteFavoriteById,
   getFavoriteByProperty,
   deleteFavoriteByProperty,
+
+  getAllStatus,
 };

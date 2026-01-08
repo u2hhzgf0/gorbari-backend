@@ -89,6 +89,19 @@ const deleteFavorite = catchAsync(async (req, res) => {
   );
 });
 
+const getAllStatus = catchAsync(async (req, res) => {
+  const result = await infoService.getAllStatus(req.query.year, req.user);
+
+  res.status(httpStatus.OK).json(
+    response({
+      message: "All Status",
+      status: "OK",
+      statusCode: httpStatus.OK,
+      data: result,
+    })
+  );
+});
+
 module.exports = {
   createFavorite,
   getFavorites,
@@ -96,4 +109,6 @@ module.exports = {
   updateFavorite,
   deleteFavorite,
   removeFavorite,
+
+  getAllStatus
 };

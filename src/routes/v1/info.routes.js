@@ -18,4 +18,9 @@ router
   .patch(auth("common"), infoController.updateFavorite)
   .delete(auth("common"), infoController.deleteFavorite);
 
+
+  router
+  .route("/deshbord/status")
+  .get(auth("adminAndAgent"), infoController.getAllStatus)
+
 module.exports = router;
