@@ -6,6 +6,7 @@ const catchAsync = require("../utils/catchAsync");
 const unlinkImages = require("../common/unlinkImage");
 const ApiError = require("../utils/ApiError");
 const { default: mongoose } = require("mongoose");
+const cron = require("node-cron");
 
 const createProperty = catchAsync(async (req, res) => {
   req.body.createdBy = req.user.id;
@@ -13,7 +14,6 @@ const createProperty = catchAsync(async (req, res) => {
   const imagesCount = req.files?.images?.length || 0;
 
   if (req.user.role !== "admin") {
-
     // ❌ No subscription
     if (!req.user.subscription?.isSubscriptionTaken) {
       if (imagesCount > 1) {
@@ -79,8 +79,6 @@ const createProperty = catchAsync(async (req, res) => {
     })
   );
 });
-
-
 
 const getProperties = catchAsync(async (req, res) => {
   const filter = pick(req.query, [
@@ -289,7 +287,6 @@ const updateProperty = catchAsync(async (req, res) => {
 
   // ✅ ADMIN: Skip subscription & image limit checks
   if (req.user.role !== "admin") {
-
     // ❌ No subscription
     if (!req.user.subscription?.isSubscriptionTaken) {
       if (imagesCount > 1) {
@@ -361,16 +358,13 @@ const updateProperty = catchAsync(async (req, res) => {
   );
 });
 
-
 const uploadPropertyImage = catchAsync(async (req, res) => {
   if (!req.file) {
     throw new ApiError(httpStatus.BAD_REQUEST, "No image uploaded");
   }
 
   // Get property first (to count existing images)
-  const property = await propertyService.getPropertyById(
-    req.params.propertyId
-  );
+  const property = await propertyService.getPropertyById(req.params.propertyId);
 
   if (!property) {
     throw new ApiError(httpStatus.NOT_FOUND, "Property not found");
@@ -380,7 +374,6 @@ const uploadPropertyImage = catchAsync(async (req, res) => {
 
   // ✅ ADMIN: Skip subscription & image limit checks
   if (req.user.role !== "admin") {
-
     // ❌ No subscription
     if (!req.user.subscription?.isSubscriptionTaken) {
       if (existingImagesCount >= 1) {
@@ -428,7 +421,6 @@ const uploadPropertyImage = catchAsync(async (req, res) => {
     })
   );
 });
-
 
 const deletePropertyImage = catchAsync(async (req, res) => {
   const { imagePath } = req.body;
@@ -482,7 +474,10 @@ const boostProperty = catchAsync(async (req, res) => {
     );
   }
 
-  if (!user.subscription.boostProperty || user.subscription.boostProperty <= 0) {
+  if (
+    !user.subscription.boostProperty ||
+    user.subscription.boostProperty <= 0
+  ) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
       "You have no boost property limit remaining."
@@ -511,7 +506,7 @@ const boostProperty = catchAsync(async (req, res) => {
 
   const boostData = {
     isBoosted: true,
-    boostedRank: subscription.rank || 1,
+    boostedRank: subscription.days || 1,
     boostExpiry: user.subscription.subscriptionExpirationDate,
   };
 
@@ -533,7 +528,27 @@ const boostProperty = catchAsync(async (req, res) => {
   );
 });
 
+// Runs every day at 12:00 PM
+cron.schedule("0 12 * * *", async () => {
+  
+  try {
+    console.log("[CRON] Boost rank decay job started");
 
+    const result = await Property.updateMany(
+      {
+        isBosted: true,
+        bostedRank: { $gt: 1 },
+      },
+      {
+        $inc: { bostedRank: -1 },
+      }
+    );
+
+    console.log(`[CRON] Boost rank updated. Modified: ${result.modifiedCount}`);
+  } catch (error) {
+    console.error("[CRON] Boost rank decay failed:", error);
+  }
+});
 
 module.exports = {
   createProperty,

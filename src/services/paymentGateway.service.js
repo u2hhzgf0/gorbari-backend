@@ -4,6 +4,16 @@ const ApiError = require("../utils/ApiError");
 const mongoose = require("mongoose");
 
 const createGateway = async (gatewayData) => {
+  const existingGateway = await PaymentGateway.findOne({
+    name: gatewayData.name,
+  });
+
+  if (existingGateway) {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "Payment gateway already exists"
+    );
+  }
   const gateway = await PaymentGateway.create(gatewayData);
   return gateway;
 };
