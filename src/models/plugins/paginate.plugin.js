@@ -1,62 +1,85 @@
 const paginate = (schema) => {
-  schema.statics.paginate = async function (filter, options) {
-    let sort = '';
+  schema.statics.paginate = async function (filter, options = {}) {
+    // -------------------------
+    // SORT
+    // -------------------------
+    let sort = "createdAt";
     if (options.sortBy) {
       const sortingCriteria = [];
-      options.sortBy.split(',').forEach((sortOption) => {
-        const [key, order] = sortOption.split(':');
-        sortingCriteria.push((order === 'desc' ? '-' : '') + key);
+      options.sortBy.split(",").forEach((sortOption) => {
+        const [key, order] = sortOption.split(":");
+        sortingCriteria.push((order === "desc" ? "-" : "") + key);
       });
-      sort = sortingCriteria.join(' ');
-    } else {
-      sort = 'createdAt';
+      sort = sortingCriteria.join(" ");
     }
 
-    const limit = options.limit && parseInt(options.limit, 10) > 0 ? parseInt(options.limit, 10) : 10;
-    const page = options.page && parseInt(options.page, 10) > 0 ? parseInt(options.page, 10) : 1;
+    // -------------------------
+    // PAGINATION
+    // -------------------------
+    const limit =
+      options.limit && parseInt(options.limit, 10) > 0
+        ? parseInt(options.limit, 10)
+        : 10;
+
+    const page =
+      options.page && parseInt(options.page, 10) > 0
+        ? parseInt(options.page, 10)
+        : 1;
+
     const skip = (page - 1) * limit;
 
+    // -------------------------
+    // QUERY
+    // -------------------------
     const countPromise = this.countDocuments(filter).exec();
-    let docsPromise = this.find(filter).sort(sort).skip(skip).limit(limit);
+    let query = this.find(filter).sort(sort).skip(skip).limit(limit);
 
+    // -------------------------
+    // POPULATE (STRING OR ARRAY)
+    // -------------------------
     if (options.populate) {
-      options.populate.split(',').forEach((populateOption) => {
-        const [field, ...fieldsToPopulate] = populateOption.split(' ');
-        let populateFields = '';
-        if (fieldsToPopulate.length > 0) {
-          populateFields = fieldsToPopulate.join(' ');
-        }
-        docsPromise = docsPromise.populate({
-          path: field,
-          select: populateFields
+      // ✅ ARRAY-BASED POPULATE (BEST PRACTICE)
+      if (Array.isArray(options.populate)) {
+        options.populate.forEach((populateOption) => {
+          query = query.populate(populateOption);
         });
-      });
+      }
+
+      // ✅ STRING-BASED POPULATE (BACKWARD COMPATIBLE)
+      else if (typeof options.populate === "string") {
+        options.populate.split(",").forEach((populateOption) => {
+          const parts = populateOption.trim().split(" ");
+          const path = parts[0];
+          const select = parts.slice(1).join(" ");
+
+          query = query.populate({
+            path,
+            select: select || undefined,
+          });
+        });
+      }
     }
 
-    docsPromise = docsPromise.exec();
+    // -------------------------
+    // EXECUTE
+    // -------------------------
+    const docsPromise = query.exec();
 
-    return Promise.all([countPromise, docsPromise]).then((values) => {
-      const [totalResults, results] = values;
-      const totalPages = Math.ceil(totalResults / limit);
-      const result = {
-        results,
-        page,
-        limit,
-        totalPages,
-        totalResults,
-      };
-      return Promise.resolve(result);
-    });
+    const [totalResults, results] = await Promise.all([
+      countPromise,
+      docsPromise,
+    ]);
+
+    const totalPages = Math.ceil(totalResults / limit);
+
+    return {
+      results,
+      page,
+      limit,
+      totalPages,
+      totalResults,
+    };
   };
 };
 
 module.exports = paginate;
-
-
-// const options = {
-//   sortBy: 'createdAt:desc',
-//   limit: 10,
-//   page: 1,
-//   populate: 'crewLeaders image username fullName email, affiliations' // Specify fields for crewLeaders and affiliations
-// };
-// Example

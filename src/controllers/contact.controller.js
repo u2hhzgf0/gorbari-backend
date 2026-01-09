@@ -1,16 +1,14 @@
 const httpStatus = require("http-status");
 const catchAsync = require("../utils/catchAsync");
 const response = require("../config/response");
-const { contactService } = require("../services");
+const { contactService, subscriptionService } = require("../services");
 const pick = require("../utils/pick");
 const ApiError = require("../utils/ApiError");
 
 const createContact = catchAsync(async (req, res) => {
-
-    if(!req.body.type){
-        throw new ApiError(httpStatus.BAD_REQUEST, "type is required")
-    }
-
+  if (!req.body.type) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "type is required");
+  }
 
   if (req.body.fullName) {
     req.body.fullName = req.body.fullName;
@@ -20,12 +18,12 @@ const createContact = catchAsync(async (req, res) => {
     req.body.fullName = `${req.body.firstName} ${req.body.lastName}`;
   }
 
-  if(req.user){
-        req.body.user = req.user.id
-        req.body.fullName = req.user.fullName
-    }
+  if (req.user) {
+    req.body.user = req.user.id;
+    req.body.fullName = req.user.fullName;
+  }
 
-    console.log(req.body)
+  console.log(req.body);
 
   const contact = await contactService.createContacts(req.body);
   res.status(httpStatus.CREATED).json(
@@ -60,7 +58,13 @@ const getContact = catchAsync(async (req, res) => {
 });
 
 const getContacts = catchAsync(async (req, res) => {
-  const filter = pick(req.query, ["fullName", "email", "phoneNumber", "address", "type"]);
+  const filter = pick(req.query, [
+    "fullName",
+    "email",
+    "phoneNumber",
+    "address",
+    "type",
+  ]);
   const options = pick(req.query, ["sortBy", "limit", "page"]);
   const contacts = await contactService.getAllcontact(filter, options);
   res.status(httpStatus.OK).json(
@@ -73,8 +77,60 @@ const getContacts = catchAsync(async (req, res) => {
   );
 });
 
+const getSelfContacts = catchAsync(async (req, res) => {
+  const filter = pick(req.query, [
+    "fullName",
+    "email",
+    "phoneNumber",
+    "address",
+    "type",
+  ]);
+
+  const options = pick(req.query, ["sortBy", "limit", "page"]);
+  const user = req.user;
+
+  if (user.role !== "admin") {
+    if (!user.subscription || !user.subscription.isSubscriptionTaken) {
+      throw new ApiError(
+        httpStatus.FORBIDDEN,
+        "You don't have an active subscription. Please upgrade your plan."
+      );
+    }
+
+    if (new Date(user.subscription.subscriptionExpirationDate) < new Date()) {
+      throw new ApiError(
+        httpStatus.FORBIDDEN,
+        "Your subscription has expired. Please renew your plan."
+      );
+    }
+
+    const subscription = await subscriptionService.getSubscriptionById(
+      user.subscription.subscriptionId
+    );
+
+    if (!subscription || subscription.isViewsContact === false) {
+      throw new ApiError(
+        httpStatus.FORBIDDEN,
+        "Your current subscription does not allow viewing contacts."
+      );
+    }
+  }
+
+  const contacts = await contactService.getAllcontact(filter, options, user);
+
+  res.status(httpStatus.OK).json(
+    response({
+      message: "Contacts retrieved successfully",
+      status: "OK",
+      statusCode: httpStatus.OK,
+      data: contacts,
+    })
+  );
+});
+
 module.exports = {
   createContact,
   getContact,
   getContacts,
+  getSelfContacts,
 };

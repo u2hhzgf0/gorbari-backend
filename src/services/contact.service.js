@@ -30,27 +30,51 @@ const getContactById = async (contactId) => {
   return contact;
 };
 
-const getAllcontact = async (filter, options) => {
+const getAllcontact = async (filter, options, user) => {
   const query = {};
 
-  for (const key of Object.keys(filter)) {
-    if (
-      (key === "fullName" ||
-        key === "email" ||
-        key === "type" ||
-        key === "phoneNumber" ||
-        key === "address") &&
-      filter[key] !== ""
-    ) {
+  // User-level restriction
+  if (user?.id) {
+    query.propertyWoner = user.id;
+  }
+
+  const searchableFields = [
+    "fullName",
+    "email",
+    "type",
+    "phoneNumber",
+    "address",
+  ];
+
+  for (const key in filter) {
+    if (!filter[key]) continue;
+
+    if (searchableFields.includes(key)) {
       query[key] = { $regex: filter[key], $options: "i" };
-    } else if (filter[key] !== "") {
+    } else {
       query[key] = filter[key];
     }
   }
 
+  options.populate = [
+    {
+      path: "propertyWoner",
+      select: "fullName profileImage email",
+    },
+    {
+      path: "user",
+      select: "fullName profileImage email",
+    },
+    {
+      path: "property",
+      select: "title category type images",
+    },
+  ];
+
   const contacts = await Contact.paginate(query, options);
   return contacts;
 };
+
 
 module.exports = {
   createContacts,
