@@ -102,6 +102,90 @@ const getAllStatus = catchAsync(async (req, res) => {
   );
 });
 
+const createPrivacy = catchAsync(async (req, res) => {
+  const privacy = await infoService.createPrivacy(req.body);
+  res
+    .status(httpStatus.CREATED)
+    .json(
+      response({
+        message: "Privacy Policy Created",
+        status: "OK",
+        statusCode: httpStatus.CREATED,
+        data: privacy,
+      })
+    );
+});
+
+const queryPrivacy = catchAsync(async (req, res) => {
+  const result = await infoService.queryPrivacy();
+  res
+    .status(httpStatus.OK)
+    .json(
+      response({
+        message: "Privacy Policy",
+        status: "OK",
+        statusCode: httpStatus.OK,
+        data: result,
+      })
+    );
+});
+
+const createTerms = catchAsync(async (req, res) => {
+  const terms = await infoService.createTerms(req.body);
+  res
+    .status(httpStatus.CREATED)
+    .json(
+      response({
+        message: "Terms and Services Created",
+        status: "OK",
+        statusCode: httpStatus.CREATED,
+        data: terms,
+      })
+    );
+});
+
+const queryTerms = catchAsync(async (req, res) => {
+  const result = await infoService.queryTerms();
+  res
+    .status(httpStatus.OK)
+    .json(
+      response({
+        message: "Terms and Services",
+        status: "OK",
+        statusCode: httpStatus.OK,
+        data: result,
+      })
+    );
+});
+
+const createAboutUs = catchAsync(async (req, res) => {
+  const trustSafety = await infoService.createAboutUs(req.body);
+  res
+    .status(httpStatus.CREATED)
+    .json(
+      response({
+        message: "About us Created",
+        status: "OK",
+        statusCode: httpStatus.CREATED,
+        data: trustSafety,
+      })
+    );
+});
+
+const queryAboutUs = catchAsync(async (req, res) => {
+  const result = await infoService.queryAboutUs();
+  res
+    .status(httpStatus.OK)
+    .json(
+      response({
+        message: "About us",
+        status: "OK",
+        statusCode: httpStatus.OK,
+        data: result,
+      })
+    );
+});
+
 module.exports = {
   createFavorite,
   getFavorites,
@@ -110,5 +194,12 @@ module.exports = {
   deleteFavorite,
   removeFavorite,
 
-  getAllStatus
+  getAllStatus,
+
+  createPrivacy,
+  queryPrivacy,
+  createTerms,
+  queryTerms,
+  createAboutUs,
+  queryAboutUs,
 };

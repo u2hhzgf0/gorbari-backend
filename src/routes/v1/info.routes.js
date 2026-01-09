@@ -11,16 +11,29 @@ router
   .get(auth("common"), infoController.getFavorites)
   .delete(auth("common"), infoController.removeFavorite);
 
-
 router
   .route("/favorite/:favoriteId")
   .get(auth("common"), infoController.getFavoriteById)
   .patch(auth("common"), infoController.updateFavorite)
   .delete(auth("common"), infoController.deleteFavorite);
 
-
-  router
+router
   .route("/deshbord/status")
-  .get(auth("adminAndAgent"), infoController.getAllStatus)
+  .get(auth("adminAndAgent"), infoController.getAllStatus);
+
+router
+  .route("/privacy-policy")
+  .post(auth("admin"), infoController.createPrivacy)
+  .get(infoController.queryPrivacy);
+
+router
+  .route("/terms-services")
+  .post(auth("admin"), infoController.createTerms)
+  .get(infoController.queryTerms);
+
+router
+  .route("/about-us")
+  .post(auth("admin"), infoController.createAboutUs)
+  .get(infoController.queryAboutUs);
 
 module.exports = router;

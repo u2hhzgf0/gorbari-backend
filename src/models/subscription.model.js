@@ -62,7 +62,7 @@ const subscriptionSchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    boostProperty: {
+    bostProperty: {
       type: Number,
       required: false,
     },

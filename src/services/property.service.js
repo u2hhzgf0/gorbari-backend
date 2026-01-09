@@ -31,8 +31,7 @@ const queryProperties = async (filter, options) => {
         matchStage[key] = {
           $in: value.map((v) => new RegExp(v, "i")),
         };
-      } else if (typeof value === "string" && value.includes(",")) {
-        // Split comma-separated values
+      } else if (typeof value === "string" && value.includes(",")) {s
         const values = value
           .split(",")
           .map((v) => v.trim())
@@ -112,9 +111,18 @@ const queryPropertiesForAgent = async (filter, options, userId) => {
     isDeleted: false,
   };
 
+  // Handle isBosted filter
+  if (filter.isBosted !== undefined) {
+    matchStage.isBosted =
+      filter.isBosted === "true" || filter.isBosted === true;
+  }
+
   Object.keys(filter).forEach((key) => {
     const value = filter[key];
     if (!value || value === "") return;
+
+    // Skip isBosted only
+    if (key === "isBosted") return;
 
     if (
       [
@@ -134,11 +142,11 @@ const queryPropertiesForAgent = async (filter, options, userId) => {
           $in: value.map((v) => new RegExp(v, "i")),
         };
       } else if (typeof value === "string" && value.includes(",")) {
-        // Split comma-separated values
         const values = value
           .split(",")
           .map((v) => v.trim())
-          .filter((v) => v);
+          .filter(Boolean);
+
         matchStage[key] = {
           $in: values.map((v) => new RegExp(v, "i")),
         };
@@ -153,13 +161,18 @@ const queryPropertiesForAgent = async (filter, options, userId) => {
       if (value.min !== undefined) matchStage[key].$gte = Number(value.min);
       if (value.max !== undefined) matchStage[key].$lte = Number(value.max);
     } else if (Array.isArray(value)) {
-      matchStage[key] = { $in: value.map((v) => (isNaN(v) ? v : Number(v))) };
+      matchStage[key] = {
+        $in: value.map((v) => (isNaN(v) ? v : Number(v))),
+      };
     } else if (typeof value === "string" && value.includes(",")) {
       const values = value
         .split(",")
         .map((v) => v.trim())
-        .filter((v) => v);
-      matchStage[key] = { $in: values.map((v) => (isNaN(v) ? v : Number(v))) };
+        .filter(Boolean);
+
+      matchStage[key] = {
+        $in: values.map((v) => (isNaN(v) ? v : Number(v))),
+      };
     } else {
       matchStage[key] = isNaN(value) ? value : Number(value);
     }
@@ -167,7 +180,7 @@ const queryPropertiesForAgent = async (filter, options, userId) => {
 
   const pipeline = [{ $match: matchStage }];
 
-  // Add sorting
+  // SORTING LOGIC (default / sortBy only)
   if (options.sortBy) {
     const sortFields = options.sortBy.split(",");
     const sortStage = {};
@@ -184,8 +197,9 @@ const queryPropertiesForAgent = async (filter, options, userId) => {
   } else {
     pipeline.push({ $sort: { createdAt: -1 } });
   }
-  const page = parseInt(options.page) || 1;
-  const limit = parseInt(options.limit) || 10;
+
+  const page = parseInt(options.page, 10) || 1;
+  const limit = parseInt(options.limit, 10) || 10;
   const skip = (page - 1) * limit;
 
   pipeline.push({
@@ -196,7 +210,8 @@ const queryPropertiesForAgent = async (filter, options, userId) => {
   });
 
   const [result] = await Property.aggregate(pipeline);
-  const totalResults = result.totalCount[0]?.count || 0;
+
+  const totalResults = result?.totalCount?.[0]?.count || 0;
   const totalPages = Math.ceil(totalResults / limit);
 
   return {

@@ -1,7 +1,8 @@
 const httpStatus = require("http-status");
-const { Favorite, Property, Transaction, User } = require("../models");
+const { Favorite, Property, Transaction, User, AboutUs, TermsAndCondition, PrivacyPolicy } = require("../models");
 const ApiError = require("../utils/ApiError");
 const propertyService = require("./property.service");
+const he = require("he");
 
 const createFavorite = async (favoriteBody) => {
   if (favoriteBody.property) {
@@ -207,6 +208,69 @@ const getAllStatus = async (year, user) => {
   };
 };
 
+const createPrivacy = async (privacyBody) => {
+  if (privacyBody.content) {
+    privacyBody.content = he.decode(privacyBody.content);
+  }
+
+  const existingPrivacy = await PrivacyPolicy.findOne();
+  if (existingPrivacy) {
+    existingPrivacy.set(privacyBody);
+    await existingPrivacy.save();
+    return existingPrivacy;
+  } else {
+    const newPrivacy = await PrivacyPolicy.create(privacyBody);
+    return newPrivacy;
+  }
+};
+
+const queryPrivacy = async () => {
+  const privacy = await PrivacyPolicy.find();
+  return privacy;
+};
+
+const createTerms = async (termsBody) => {
+  if (termsBody.content) {
+    termsBody.content = he.decode(termsBody.content);
+  }
+
+  const existingTerms = await TermsAndCondition.findOne();
+  if (existingTerms) {
+    existingTerms.set(termsBody);
+    await existingTerms.save();
+    return existingTerms;
+  } else {
+    const newTerms = await TermsAndCondition.create(termsBody);
+    return newTerms;
+  }
+};
+
+const queryTerms = async () => {
+  const terms = await TermsAndCondition.find();
+  return terms;
+};
+
+const createAboutUs = async (body) => {
+  if (body.content) {
+    body.content = he.decode(body.content);
+  }
+
+  const existingAboutUs = await AboutUs.findOne();
+  if (existingAboutUs) {
+    existingAboutUs.set(body);
+    await existingAboutUs.save();
+    return existingAboutUs;
+  } else {
+    const newAboutUs = await AboutUs.create(body);
+    return newAboutUs;
+  }
+};
+
+const queryAboutUs = async () => {
+  const newAboutUs = await AboutUs.find();
+  return newAboutUs;
+};
+
 module.exports = {
   createFavorite,
   queryFavorites,
@@ -217,4 +281,11 @@ module.exports = {
   deleteFavoriteByProperty,
 
   getAllStatus,
+
+  createPrivacy,
+  queryPrivacy,
+  createTerms,
+  queryTerms,
+  createAboutUs,
+  queryAboutUs,
 };

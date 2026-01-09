@@ -85,12 +85,16 @@ const takeSubscriptions = async (userId, subData) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "subscription not found");
   }
 
+const expirationDate = new Date();
+expirationDate.setDate(expirationDate.getDate() + (subscription.days || 0));
+
+
   const subDatas = {
     user: user._id,
     subscriptionId: subData.subscriptionId,
     status: "pending",
     subscriptionLimitation: subscription.days || 0,
-    subscriptionExpirationDate: new Date() + subscription.days,
+    subscriptionExpirationDate: expirationDate,
     type: subData.type,
     amount: subscription.amount,
     screenshot: subData.screenshot || null,
@@ -102,7 +106,7 @@ const takeSubscriptions = async (userId, subData) => {
   user.subscription = {
     subscriptionId: subData.subscriptionId,
     transactionId: transaction._id,
-    subscriptionExpirationDate: subDatas.subscriptionExpirationDate,
+    subscriptionExpirationDate: expirationDate,
     status: "pending",
     bostProperty: subscription.bostProperty
   };

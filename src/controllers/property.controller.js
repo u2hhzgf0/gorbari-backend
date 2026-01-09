@@ -155,6 +155,8 @@ const getPropertiesForAgent = catchAsync(async (req, res) => {
     "maxAreaSqFt",
     "status",
     "catagory",
+    "isBosted",
+    "isTopView",
   ]);
 
   if (filter.minPrice || filter.maxPrice) {
@@ -272,6 +274,11 @@ const getPropertiesAdvanced = catchAsync(async (req, res) => {
 
 const getPropertyById = catchAsync(async (req, res) => {
   const property = await propertyService.getPropertyById(req.params.propertyId);
+
+  property.views += 1;
+
+  await property.save();
+
   res.status(httpStatus.OK).json(
     response({
       message: "Property Found",
@@ -474,10 +481,7 @@ const boostProperty = catchAsync(async (req, res) => {
     );
   }
 
-  if (
-    !user.subscription.boostProperty ||
-    user.subscription.boostProperty <= 0
-  ) {
+  if (!user.subscription.bostProperty || user.subscription.bostProperty <= 0) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
       "You have no boost property limit remaining."
@@ -497,7 +501,7 @@ const boostProperty = catchAsync(async (req, res) => {
     throw new ApiError(httpStatus.NOT_FOUND, "Property not found");
   }
 
-  if (property.isBoosted) {
+  if (property.isBosted) {
     throw new ApiError(
       httpStatus.BAD_REQUEST,
       "This property is already boosted"
@@ -505,17 +509,17 @@ const boostProperty = catchAsync(async (req, res) => {
   }
 
   const boostData = {
-    isBoosted: true,
-    boostedRank: subscription.days || 1,
-    boostExpiry: user.subscription.subscriptionExpirationDate,
+    isBosted: true,
+    bostedRank: subscription.days || 1,
+    bosteExpiry: user.subscription.subscriptionExpirationDate,
   };
 
-  const boostedProperty = await propertyService.boostProperty(
+  const boostedProperty = await propertyService.bostProperty(
     propertyId,
     boostData
   );
 
-  user.subscription.boostProperty -= 1;
+  user.subscription.bostProperty -= 1;
   await user.save();
 
   res.status(httpStatus.OK).json(
@@ -528,27 +532,32 @@ const boostProperty = catchAsync(async (req, res) => {
   );
 });
 
-// Runs every day at 12:00 PM
-cron.schedule("0 12 * * *", async () => {
-  
-  try {
-    console.log("[CRON] Boost rank decay job started");
+const propertCronJob = () => {
+  // Runs every day at 12:00 PM
+  cron.schedule("0 12 * * *", async () => {
+    try {
+      console.log("[CRON] Boost rank decay job started");
 
-    const result = await Property.updateMany(
-      {
-        isBosted: true,
-        bostedRank: { $gt: 1 },
-      },
-      {
-        $inc: { bostedRank: -1 },
-      }
-    );
+      const result = await Property.updateMany(
+        {
+          isBosted: true,
+          bostedRank: { $gt: 1 },
+        },
+        {
+          $inc: { bostedRank: -1 },
+        }
+      );
 
-    console.log(`[CRON] Boost rank updated. Modified: ${result.modifiedCount}`);
-  } catch (error) {
-    console.error("[CRON] Boost rank decay failed:", error);
-  }
-});
+      console.log(
+        `[CRON] Boost rank updated. Modified: ${result.modifiedCount}`
+      );
+    } catch (error) {
+      console.error("[CRON] Boost rank decay failed:", error);
+    }
+  });
+};
+
+propertCronJob();
 
 module.exports = {
   createProperty,
