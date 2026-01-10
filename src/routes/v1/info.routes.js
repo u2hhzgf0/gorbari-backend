@@ -36,4 +36,6 @@ router
   .post(auth("admin"), infoController.createAboutUs)
   .get(infoController.queryAboutUs);
 
+router.route("/public/status").get(infoController.getPublicStatus);
+
 module.exports = router;

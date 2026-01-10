@@ -271,6 +271,28 @@ const queryAboutUs = async () => {
   return newAboutUs;
 };
 
+const getPublicStatus = async () => {
+  const totalProperty = await Property.countDocuments({
+    isDeleted: false,
+  });
+
+  const totalUsers = await User.countDocuments({
+    isDeleted: false,
+    role: "user",
+  });
+
+  const totalClient = Math.floor((totalUsers * 60) / 100);
+  const happyClient = Math.floor((totalUsers * 10) / 100);
+
+  return {
+    totalProperty,
+    totalClient,
+    happyClient,
+  };
+};
+
+
+
 module.exports = {
   createFavorite,
   queryFavorites,
@@ -281,6 +303,7 @@ module.exports = {
   deleteFavoriteByProperty,
 
   getAllStatus,
+  getPublicStatus,
 
   createPrivacy,
   queryPrivacy,

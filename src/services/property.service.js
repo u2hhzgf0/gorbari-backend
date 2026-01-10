@@ -10,9 +10,19 @@ const createProperty = async (propertyBody) => {
 const queryProperties = async (filter, options) => {
   const matchStage = { isDeleted: false };
 
+  // ✅ Handle isBosted filter safely
+  if (filter.isBosted !== undefined) {
+    matchStage.isBosted =
+      filter.isBosted === "true" || filter.isBosted === true;
+  }
+
+  // 🔍 Dynamic filters
   Object.keys(filter).forEach((key) => {
     const value = filter[key];
     if (!value || value === "") return;
+
+    // ❌ already handled
+    if (key === "isBosted") return;
 
     if (
       [
@@ -31,11 +41,12 @@ const queryProperties = async (filter, options) => {
         matchStage[key] = {
           $in: value.map((v) => new RegExp(v, "i")),
         };
-      } else if (typeof value === "string" && value.includes(",")) {s
+      } else if (typeof value === "string" && value.includes(",")) {
         const values = value
           .split(",")
           .map((v) => v.trim())
-          .filter((v) => v);
+          .filter(Boolean);
+
         matchStage[key] = {
           $in: values.map((v) => new RegExp(v, "i")),
         };
@@ -50,13 +61,18 @@ const queryProperties = async (filter, options) => {
       if (value.min !== undefined) matchStage[key].$gte = Number(value.min);
       if (value.max !== undefined) matchStage[key].$lte = Number(value.max);
     } else if (Array.isArray(value)) {
-      matchStage[key] = { $in: value.map((v) => (isNaN(v) ? v : Number(v))) };
+      matchStage[key] = {
+        $in: value.map((v) => (isNaN(v) ? v : Number(v))),
+      };
     } else if (typeof value === "string" && value.includes(",")) {
       const values = value
         .split(",")
         .map((v) => v.trim())
-        .filter((v) => v);
-      matchStage[key] = { $in: values.map((v) => (isNaN(v) ? v : Number(v))) };
+        .filter(Boolean);
+
+      matchStage[key] = {
+        $in: values.map((v) => (isNaN(v) ? v : Number(v))),
+      };
     } else {
       matchStage[key] = isNaN(value) ? value : Number(value);
     }
@@ -64,25 +80,65 @@ const queryProperties = async (filter, options) => {
 
   const pipeline = [{ $match: matchStage }];
 
-  // Add sorting
+  // ✅ Populate createdBy (Aggregation way)
+  pipeline.push(
+    {
+      $lookup: {
+        from: "users",
+        localField: "createdBy",
+        foreignField: "_id",
+        as: "createdBy",
+      },
+    },
+    {
+      $unwind: {
+        path: "$createdBy",
+        preserveNullAndEmptyArrays: true,
+      },
+    }
+  );
+
+  // ✅ Project only safe fields
+  pipeline.push({
+    $project: {
+      title: 1,
+      type: 1,
+      price: 1,
+      address: 1,
+      city: 1,
+      state: 1,
+      country: 1,
+      zipCode: 1,
+      status: 1,
+      catagory: 1,
+      isBosted: 1,
+      createdAt: 1,
+
+      createdBy: {
+        _id: "$createdBy._id",
+        fullName: "$createdBy.fullName",
+        email: "$createdBy.email",
+        profileImage: "$createdBy.profileImage",
+        subscription: "$createdBy.subscription"
+      },
+    },
+  });
+
+  // 🔃 Sorting
   if (options.sortBy) {
-    const sortFields = options.sortBy.split(",");
     const sortStage = {};
-
-    sortFields.forEach((field) => {
-      if (field.startsWith("-")) {
-        sortStage[field.substring(1)] = -1;
-      } else {
-        sortStage[field] = 1;
-      }
+    options.sortBy.split(",").forEach((field) => {
+      sortStage[field.startsWith("-") ? field.slice(1) : field] =
+        field.startsWith("-") ? -1 : 1;
     });
-
     pipeline.push({ $sort: sortStage });
   } else {
     pipeline.push({ $sort: { createdAt: -1 } });
   }
-  const page = parseInt(options.page) || 1;
-  const limit = parseInt(options.limit) || 10;
+
+  // 📄 Pagination
+  const page = parseInt(options.page, 10) || 1;
+  const limit = parseInt(options.limit, 10) || 10;
   const skip = (page - 1) * limit;
 
   pipeline.push({
@@ -93,7 +149,8 @@ const queryProperties = async (filter, options) => {
   });
 
   const [result] = await Property.aggregate(pipeline);
-  const totalResults = result.totalCount[0]?.count || 0;
+
+  const totalResults = result?.totalCount?.[0]?.count || 0;
   const totalPages = Math.ceil(totalResults / limit);
 
   return {
@@ -104,6 +161,7 @@ const queryProperties = async (filter, options) => {
     totalResults,
   };
 };
+
 
 const queryPropertiesForAgent = async (filter, options, userId) => {
   const matchStage = {

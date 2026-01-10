@@ -102,6 +102,19 @@ const getAllStatus = catchAsync(async (req, res) => {
   );
 });
 
+const getPublicStatus = catchAsync(async (req, res) => {
+  const result = await infoService.getPublicStatus();
+
+  res.status(httpStatus.OK).json(
+    response({
+      message: "All Status",
+      status: "OK",
+      statusCode: httpStatus.OK,
+      data: result,
+    })
+  );
+});
+
 const createPrivacy = catchAsync(async (req, res) => {
   const privacy = await infoService.createPrivacy(req.body);
   res
@@ -195,6 +208,7 @@ module.exports = {
   removeFavorite,
 
   getAllStatus,
+  getPublicStatus,
 
   createPrivacy,
   queryPrivacy,

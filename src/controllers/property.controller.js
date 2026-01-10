@@ -98,6 +98,7 @@ const getProperties = catchAsync(async (req, res) => {
     "maxAreaSqFt",
     "status",
     "catagory",
+    "isBosted",
   ]);
 
   if (filter.minPrice || filter.maxPrice) {
