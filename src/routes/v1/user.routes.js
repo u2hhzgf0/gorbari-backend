@@ -25,4 +25,7 @@ router
 
 router.route("/lists").get(auth("admin"), userController.getUsers);
 
+router.route("/public-agent").get(userController.getPublicAgent);
+
+
 module.exports = router;

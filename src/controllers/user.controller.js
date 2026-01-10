@@ -32,6 +32,36 @@ const getUsers = catchAsync(async (req, res) => {
   );
 });
 
+const getPublicAgent = catchAsync(async (req, res) => {
+  const filter = pick(req.query, ["fullName"]);
+  const options = pick(req.query, ["sortBy", "limit", "page"]);
+
+  filter.role = "agent";
+
+  const result = await userService.queryUsers(filter, options);
+
+  const agents = result.results.map((agent) => ({
+    id: agent._id,
+    fullName: agent.fullName,
+    image: agent.profileImage || null,
+  }));
+
+  res.status(httpStatus.OK).json(
+    response({
+      message: "Public agents retrieved",
+      status: "OK",
+      statusCode: httpStatus.OK,
+      data: {
+        agents,
+        page: result.page,
+        limit: result.limit,
+        totalResults: result.totalResults,
+        totalPages: result.totalPages,
+      },
+    })
+  );
+});
+
 const getProfile = catchAsync(async (req, res) => {
   const user = await userService.getUserById(req.user.id);
 
@@ -110,7 +140,9 @@ const updateProfile = catchAsync(async (req, res) => {
 
   // Set fullName if firstName or lastName is provided
   if (!req.body.fullName && (req.body.firstName || req.body.lastName)) {
-    req.body.fullName = `${req.body.firstName || ''} ${req.body.lastName || ''}`.trim();
+    req.body.fullName = `${req.body.firstName || ""} ${
+      req.body.lastName || ""
+    }`.trim();
   }
 
   const user = await userService.updateUserById(req.user.id, req.body);
@@ -145,4 +177,5 @@ module.exports = {
   updateUser,
   updateProfile,
   deleteUser,
+  getPublicAgent
 };
