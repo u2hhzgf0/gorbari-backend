@@ -64,11 +64,11 @@ const subscriptionSchema = mongoose.Schema(
     },
     bostProperty: {
       type: Number,
-      required: false,
+      required: true,
     },
     bostCraditn: {
       type: Number,
-      required: false,
+      required: true,
       default: 1,
     },
     isEmailSupport: {

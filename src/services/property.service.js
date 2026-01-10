@@ -102,6 +102,7 @@ const queryProperties = async (filter, options) => {
   pipeline.push({
     $project: {
       title: 1,
+      description: 1,
       type: 1,
       price: 1,
       address: 1,
@@ -113,6 +114,24 @@ const queryProperties = async (filter, options) => {
       catagory: 1,
       isBosted: 1,
       createdAt: 1,
+      location: 1,
+      images: 1,
+      mapLink: 1,
+      areaSqFt: 1,
+      lotSize: 1,
+      lotSizeUnit: 1,
+      bedrooms: 1,
+      bathrooms: 1,
+      parkingSpaces: 1,
+      amenities: 1,
+      videos: 1,
+      features: 1,
+      favorites: 1,
+      inquiries: 1,
+      isFeatures: 1,
+      isBosted: 1,
+      bostedRank: 1,
+      // costeExpiry: 1,
 
       createdBy: {
         _id: "$createdBy._id",
